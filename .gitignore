@@ -1,0 +1,28 @@
+# Ignore object files
+*.o
+# Ignore executable files
+*.out
+*.exe
+# Ignore backup files
+*~
+# Ignore compiled binary files
+*.bin
+# Ignore intermediate files
+*.tmp
+*.temp
+# Ignore build directories
+/build/
+/dist/
+/bin/
+/obj/
+# Ignore logs
+*.log
+*.lst
+# Ignore core dumps
+core
+# Ignore IDE specific files
+.vscode/
+# Ignore system files
+.DS_Store
+Thumbs.db
+*.pdf
