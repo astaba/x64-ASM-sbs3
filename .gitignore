@@ -11,10 +11,10 @@
 *.tmp
 *.temp
 # Ignore build directories
-/build/
-/dist/
-/bin/
-/obj/
+build/
+dist/
+bin/
+obj/
 # Ignore logs
 *.log
 *.lst
