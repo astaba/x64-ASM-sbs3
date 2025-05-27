@@ -25,7 +25,7 @@ SECTION .text	       ; Section containing code
 global 	main	       ; Linker needs this to find the entry point!
 	
 main:
-    mov rbp, rsp; for correct debugging
+    mov rbp, rsp        ; for correct debugging
     push rbp
 
     mov rax,1           ; 1 = sys_write for syscall
@@ -38,30 +38,4 @@ main:
     mov rax,60          ; 60 = exit the program
     mov rdi,0           ; Return value in rdi 0 = nothing to return
     syscall             ; Call syscall to exit
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
