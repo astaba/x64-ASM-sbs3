@@ -26,3 +26,6 @@ core
 .DS_Store
 Thumbs.db
 *.pdf
+# Unsettled
+trash/
+
