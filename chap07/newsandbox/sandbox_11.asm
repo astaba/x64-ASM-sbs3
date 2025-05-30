@@ -19,9 +19,9 @@ main:
 ; Put your experiment between the two nops
 ; Division
 
-  mov rax,253        ; Dividend,try: 250, 247
+  mov rax,0          ; Dividend,try: 250, 247
   xor rdx,rdx        ; Clear RDX (upper part of dividend)
-  mov rbx,5          ; Divisor try: 5, 17 and O to see SIGFPE (Arithmetic exception)
+  mov rbx,17         ; Divisor try: 5, 17 and O to see SIGFPE (Arithmetic exception)
   div rbx            ; Do the DIV
 
 ; Put your experiment between the two nops

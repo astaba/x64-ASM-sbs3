@@ -17,12 +17,14 @@ main:
   mov rbp,rsp        ; Save stack pointer for debugger
   nop
 ; Put your experiment between the two nops
-; Division
 
-  mov rax,253        ; Dividend,try: 250, 247
-  xor rdx,rdx        ; Clear RDX (upper part of dividend)
-  mov rbx,5          ; Divisor try: 5, 17 and O to see SIGFPE (Arithmetic exception)
-  div rbx            ; Do the DIV
+; Moving 1 byte signed value into a bigger register and loosing the signed bit
+  ; xor rax,rax
+
+  mov ax,-42         ; loads 0xFFD6 because AX is 16-bit (not 8-bit).
+  ; mov ebx,eax       ; moves the value, but doesn't sign-extend it,
+                     ; causing unexpected behavior.
+  movsx rbx,ax
 
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge

@@ -1,4 +1,10 @@
+; x64ASM_sbs3/chap07/kangaroo/kangaroo.asm
+
+
+section .note.GNU-stack
+
 section .data
+  ; Monitor Snippet changes in gdb: x/s &Snippet
 	Snippet	db "KANGAROO"
 
 section .text
@@ -7,7 +13,7 @@ section .text
 main:
     mov rbp,rsp ;Save stack pointer for debugger
 
-    nop     
+    nop
 ; Put your experiments between the two nops...
 
 	mov rbx,Snippet
@@ -15,7 +21,7 @@ main:
 DoMore:	add byte [rbx],32
 	inc rbx
 	dec rax
-	jnz DoMore     
+	jnz DoMore
 	
 ; Put your experiments between the two nops...
 	nop

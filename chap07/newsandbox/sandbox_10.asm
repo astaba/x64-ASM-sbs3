@@ -17,12 +17,16 @@ main:
   mov rbp,rsp        ; Save stack pointer for debugger
   nop
 ; Put your experiment between the two nops
-; Division
+; Multiplication with implicit operand
 
-  mov rax,253        ; Dividend,try: 250, 247
-  xor rdx,rdx        ; Clear RDX (upper part of dividend)
-  mov rbx,5          ; Divisor try: 5, 17 and O to see SIGFPE (Arithmetic exception)
-  div rbx            ; Do the DIV
+  ; mov eax,447
+  ; mov ebx,1739
+  ; mul ebx
+
+  mov eax,0xFFFFFFFF
+  mov ebx,0x3B72
+  mul ebx
+
 
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge

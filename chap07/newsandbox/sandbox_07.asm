@@ -8,6 +8,8 @@
 section .note.GNU-stack noalloc noexec nowrite progbits
 
 section .data
+  ; To track it down the memory from within gdb: x/s &Snippet
+  Snippet db "KANGAROO"
 
 section .text
 
@@ -15,14 +17,16 @@ global main
 
 main:
   mov rbp,rsp        ; Save stack pointer for debugger
+
   nop
 ; Put your experiment between the two nops
-; Division
 
-  mov rax,253        ; Dividend,try: 250, 247
-  xor rdx,rdx        ; Clear RDX (upper part of dividend)
-  mov rbx,5          ; Divisor try: 5, 17 and O to see SIGFPE (Arithmetic exception)
-  div rbx            ; Do the DIV
+  mov rbx,Snippet
+  mov rax,8
+DoMore: add byte [rbx],0x20
+  inc rbx
+  dec rax
+  jnz DoMore
 
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge
