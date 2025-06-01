@@ -1,4 +1,4 @@
-; x64ASM_sbs3/chap07/newsandbox/newsandbox.asm
+; x64ASM_sbs4/chap07/newsandbox/06_labels.asm
 
 ; In modern systems, making the stack non-executable is a security
 ; best practice (prevents exploits like stack-based shellcode).
@@ -18,13 +18,11 @@ main:
   nop
 ; Put your experiment between the two nops
 
-; Incrementing and Decrementing
-; Check the RFlags in gdb
-
-  mov eax,0FFFFFFFFh
-  mov ebx,02Dh
-  dec ebx
-  inc eax
+  ; Labels are descriptive names given to locations in your programs.
+  ; Here the label DoMore enable a loop.
+  mov rax,5
+  DoMore: dec rax
+  jnz DoMore
 
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge

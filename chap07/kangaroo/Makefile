@@ -1,4 +1,4 @@
-# x64ASM_sbs3/chap07/kangaroo/Makefile
+# x64ASM_sbs4/chap07/kangaroo/Makefile
 # CTRL-X + 2: to shift gdb TUI pane
 
 .PHONY: all clean

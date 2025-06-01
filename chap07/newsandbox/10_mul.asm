@@ -1,4 +1,4 @@
-; x64ASM_sbs3/chap07/newsandbox/newsandbox.asm
+; x64ASM_sbs4/chap07/newsandbox/10_mul.asm
 
 ; In modern systems, making the stack non-executable is a security
 ; best practice (prevents exploits like stack-based shellcode).
@@ -17,17 +17,17 @@ main:
   mov rbp,rsp        ; Save stack pointer for debugger
   nop
 ; Put your experiment between the two nops
+; Multiplication with implicit operand
 
-  ; mvo eax,5
-  ; DoMore: dec eax
-  ; jmp DoMore
+  ; mov eax,447
+  ; mov ebx,1739
+  ; mul ebx
 
-  ; mov eax,42
-  ; neg eax
-  ; add eax,42
+  mov eax,0xFFFFFFFF
+  mov ebx,0x3B72
+  mul ebx
 
-  mov rax,0FFFFFFFFFFFFFFFFh
-  inc rax
+
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge
 

@@ -1,4 +1,4 @@
-; x64ASM_sbs3/chap07/newsandbox/newsandbox.asm
+; x64ASM_sbs4/chap07/newsandbox/01_exit.asm
 ; The last syscall enable graceful exit when you run off the last nop.
 section .note.GNU-stack noalloc noexec nowrite progbits
 

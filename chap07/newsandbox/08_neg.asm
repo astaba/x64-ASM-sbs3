@@ -1,4 +1,4 @@
-; x64ASM_sbs3/chap07/newsandbox/newsandbox.asm
+; x64ASM_sbs4/chap07/newsandbox/08_neg.asm
 
 ; In modern systems, making the stack non-executable is a security
 ; best practice (prevents exploits like stack-based shellcode).
@@ -18,14 +18,16 @@ main:
   nop
 ; Put your experiment between the two nops
 
-; Moving 1 byte signed value into a bigger register and loosing the signed bit
-  ; xor rax,rax
+  ; mvo eax,5
+  ; DoMore: dec eax
+  ; jmp DoMore
 
-  mov ax,-42         ; loads 0xFFD6 because AX is 16-bit (not 8-bit).
-  ; mov ebx,eax       ; moves the value, but doesn't sign-extend it,
-                     ; causing unexpected behavior.
-  movsx rbx,ax
+  ; mov eax,42
+  ; neg eax
+  ; add eax,42
 
+  mov rax,0FFFFFFFFFFFFFFFFh
+  inc rax
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge
 
