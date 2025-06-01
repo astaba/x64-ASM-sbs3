@@ -1,54 +1,39 @@
-;  Executable name : eatsyscall
-;  Version         : 1.0
-;  Created date    : 4/25/2022
-;  Last update     : 5/10/2023
-;  Author          : Jeff Duntemann
+;  Source file     : x64ASM_sbs4/chap08/eastsyscall/eatsyscall.asm
 ;  Architecture    : x64
+;  Syntax          : Intel
 ;  From            : x64 Assembly Language Step By Step, 4th Edition
-;  Description     : A simple program in assembly for x64 Linux, using NASM 2.14,
-;                    demonstrating the use of the syscall instruction to display text.
-;                    Not for use with SASM.
-;
-;  Build using these commands:
-;    nasm -f elf64 -g -F stabs eatsyscall.asm
-;    ld -o eatsyscall eatsyscall.o
-;
+;  Description     : demonstrating the use of the syscall instruction to display text.
+;  Build commands  : nasm -f elf64 -g -F stabs eatsyscall.asm
+;                    ld -o eatsyscall eatsyscall.o
+;   WARNING: Not for use with SASM which requires main()
+; ----------------------------------------------------------------------------------------
 
-SECTION .data          ; Section containing initialised data
-	
-	EatMsg: db "Eat at Joe's!",10
- 	EatLen: equ $-EatMsg	
-	
-SECTION .bss           ; Section containing uninitialized data	
+SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark stack non-executable (security)
 
-SECTION .text          ; Section containing code
+SECTION .data
+    Msg: db "Congratulation! ", \
+    "You made your first syscall.", \
+    0x0A                           ; The string to print followed by newline
+    MsgLen: equ $ - Msg             ; Compute the length of the string
 
-global 	_start	       ; Linker needs this to find the entry point!
-	
+SECTION .bss
+    ; No uninitialized data in this program
+
+SECTION .text
+    global _start                  ; Make _start symbol visible to the linker
+
 _start:
-    push rbp
-    mov rbp,rsp
-
-    mov rax,1           ; 1 = sys_write for syscall
-    mov rdi,1           ; 1 = fd for stdout; i.e., write to the terminal window
-    mov rsi,EatMsg      ; Put address of the message string in rsi
-    mov rdx,EatLen      ; Length of string to be written in rdx
-    syscall             ; Make the system call
-
-    mov rax,60          ; 60 = exit the program
-    mov rdi,0           ; Return value in rdi 0 = nothing to return
-    syscall             ; Call syscall to exit
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ; Function prologue (for debugger's sake, though not required in bare syscalls)
+    push    rbp                    ; Step 1: save old rbp value (from CPU) to the stack
+    mov     rbp, rsp               ; Step 2: Overwrite rbp (in CPU) with current stack pointer
+    ; Setup for write syscall: write(1, Msg, MsgLen)
+    mov     rax, 1                 ; syscall number 1 = write
+    mov     rdi, 1                 ; file descriptor: 1 = stdout
+    mov     rsi, Msg               ; pointer to the string to write
+    mov     rdx, MsgLen            ; length of the string
+    syscall                        ; invoke kernel syscall
+    ; Setup for exit syscall: exit(0)
+    mov     rax, 60                ; syscall number 60 = exit
+    mov     rdi, 0                 ; exit status code 0
+    syscall                        ; invoke kernel syscall
 

@@ -1,0 +1,44 @@
+================================================================================
+PSEUDOCODE
+================================================================================
+
+Read: Set up registers for the sys_read kernel call.
+      Call sys_read to read from stdin.
+
+      Test for EOF.
+      If we're at EOF, jump to Exit.
+
+      Test the character to see if it's lowercase.
+      If it's not a lowercase character, jump to Write.
+
+      Convert the character to uppercase by subtracting 20h.
+
+Write: Set up registers for the Write kernel call.
+      Call sys_write to write to stdout.
+      Jump back to Read and get another character.
+
+Exit: Set up registers for terminating the program via sys_exit.
+      Call sys_exit.
+
+================================================================================
+IMPROVEMENT 1
+================================================================================
+Read: Set up registers for the sys_read kernel call.
+      Call sys_read to read a buffer full of characters from stdin.
+
+      Test for EOF.
+      If we're at EOF, jump to Exit.
+      Set up registers as a pointer to scan the buffer.
+
+Scan: Test the character at buffer pointer to see if it's lowercase.
+      If it's not a lowercase character, skip conversion.
+      Convert the character to uppercase by subtracting 20h.
+      Decrement buffer pointer.
+      If we still have characters in the buffer, jump to Scan.
+
+Write: Set up registers for the Write kernel call.
+      Call sys_write to write the processed buffer to stdout.
+      Jump back to Read and get another buffer full of characters.
+
+Exit: Set up registers for terminating the program via sys_exit.
+      Call sys_exit.

@@ -1,0 +1,38 @@
+================================================================================
+IMPROVEMENT 2
+================================================================================
+Set .note.GNU-stack section:
+Set .bss section:
+	define 128 constant
+	Reserve 128 bytes buffer
+
+Set .data section:
+Set .text section:
+	Set entry point as global var
+
+main:
+	save stack pointer register
+
+Read: Set up registers for the sys_read kernel call.
+      Call sys_read to read a buffer full of characters from stdin.
+      Save the number of characters read in R12 for latter sys_write
+      Test for EOF (rax = 0).
+      If we're at EOF, jump to Exit.
+
+      Put the number of characters read into the buffer in RBX
+      Put the address of the buffer in R13.
+
+Scan: Compare the byte at [r13+rbx] against 'a'.
+      If the byte is below 'a' in the ASCII sequence, jump to Next.
+      Compare the byte at [r13+rbx] against 'z'.
+      If the byte is above 'z' in the ASCII sequence, jump to Next.
+      Subtract 20h from the byte at [r13+rbx].
+Next: Decrement rbx by one
+      Jump if not zero to Scan
+
+Write: Set up registers for the Write kernel call.
+      Call sys_write to write the processed buffer to stdout.
+      Jump back to Read and get another buffer full of characters.
+Exit: Set up registers for terminating the program via sys_exit.
+      Call sys_exit.
+
