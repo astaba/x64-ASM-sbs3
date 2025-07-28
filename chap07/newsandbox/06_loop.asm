@@ -1,4 +1,4 @@
-; x64ASM_sbs4/chap07/newsandbox/08_neg.asm
+; x64ASM_sbs4/chap07/newsandbox/07_loop.asm
 
 ; In modern systems, making the stack non-executable is a security
 ; best practice (prevents exploits like stack-based shellcode).
@@ -8,28 +8,26 @@
 section .note.GNU-stack noalloc noexec nowrite progbits
 
 section .data
+  ; To track it down the memory: (gdb) x/s &Snippet
+  Snippet db "KANGAROO"
+  length equ $-Snippet
 
 section .text
 
 global main
 
 main:
-  mov rbp,rsp        ; Save stack pointer for debugger
   nop
 ; Put your experiment between the two nops
 
-  ; mvo eax,5
-  ; DoMore: dec eax
-  ; jmp DoMore
+  mov rbx,Snippet
+  mov rax,length
+ChangeCase: add byte [rbx],0x20
+  inc rbx
+  dec rax
+  jnz ChangeCase
 
-  ; mov eax,42
-  ; neg eax
-  ; add eax,42
-
-  mov rax,0FFFFFFFFFFFFFFFFh
-  inc rax
 ; Put your experiment between the two nops
   nop                ; CTRL-C from within GDB not to fall off the edge
 
 section .bss
-

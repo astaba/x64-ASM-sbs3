@@ -15,16 +15,16 @@
 ;
 
 SECTION .data          ; Section containing initialised data
-	
+
 	EatMsg: db "Eat at Joe's!",10
- 	EatLen: equ $-EatMsg	
-	
-SECTION .bss           ; Section containing uninitialized data	
+ 	EatLen: equ $-EatMsg
+
+SECTION .bss           ; Section containing uninitialized data
 
 SECTION .text          ; Section containing code
 
 global 	_start	       ; Linker needs this to find the entry point!
-	
+
 _start:
     push rbp
     mov rbp,rsp

@@ -20,6 +20,7 @@ all: $(BINARIES)
 
 $(BINARIES): %.out: %.o
 	ld $< -o $@
+	@echo "Yeah!!!"
 
 # $(word 1,$(OBJECTS)): ASSEMBLY_LISTING = -l eatsyscall.lst
 $(OBJECTS): %.o: %.asm

@@ -15,7 +15,7 @@
 
 SECTION .data	       ; Section containing initialised data
 	
-	EatMsg: db "Eat at Joe's!",10
+	EatMsg: db "Eat at Joe's!",10,"Test again",0x0A,"And see for yourself",0x0A
  	EatLen: equ $-EatMsg	
 	
 SECTION .bss	       ; Section containing uninitialized data	
@@ -25,8 +25,8 @@ SECTION .text	       ; Section containing code
 global 	main	       ; Linker needs this to find the entry point!
 	
 main:
-    mov rbp, rsp        ; for correct debugging
     push rbp
+    mov rbp, rsp        ; for correct debugging
 
     mov rax,1           ; 1 = sys_write for syscall
     mov rdi,1           ; 1 = fd for stdout; i.e., write to the terminal window
