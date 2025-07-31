@@ -1,46 +1,60 @@
 ; x64ASM_sbs4/chap08/uppercaser1gcc/uppercaser1gcc.asm
-
-section .bss
-	Buff resb 1
+; ------------------------------------------------------------------------------
+; Source file   : x64ASM_sbs4/chap08/uppercaser1gcc/sandbox.asm
+; Version       : 1.0
+; Description   : demonstrating simple text file I/O (through redirection) for
+;                 reading an input file to a buffer in blocks, forcing lowercase
+;                 characters to uppercase, and writing the modified buffer to an
+;                 output file.
+; Usage         : uppercaser1 > (output file) < (input file)
+; Build commands: nasm -f elf64 -g -F stabs eatsyscall.asm
+; NOTE: Process input one char at a time in reverse order from last one to first
+; one making a syscall for each char. Need improvement
+; ------------------------------------------------------------------------------
+section .note.GNU-stack
 
 section .data
 
+section .bss
+    Buff resb 1                 ; Reserve 1 byte in uninitialized data section
+                                ; for input character
+
 section .text
-	global main
+    global main
 
 main:
-    mov rbp, rsp   ; for correct debugging
+    mov rbp, rsp               ; Set up base pointer (for debugging purposes)
 
 Read:
-    mov rax,0      ; Specify sys_read call
-	mov rdi,0      ; Specify File Descriptor 0: Standard Input
-	mov rsi,Buff   ; Pass address of the buffer to read to
-	mov rdx,1      ; Tell sys_read to read one char from stdin
-	syscall        ; Call sys_read
+    ; read(0, &Buff, 1)
+    mov rax, 0                 ; syscall ID: 0 (sys_read)
+    mov rdi, 0                 ; arg_01: 0 (stdin file descriptor)
+    mov rsi, Buff              ; arg_02: Buff (address of buffer)
+    mov rdx, 1                 ; arg_03: 1 (read 1 byte)
+    syscall                    ; invoke kernel
+    ; if (rax == 0) goto Exit;
+    cmp rax, 0                 ; check if EOF (syscall returned 0)
+    je Exit                    ; if so, exit program
 
-	cmp rax,0      ; Look at sys_read's return value in RAX
-	je Exit        ; Jump If Equal to 0 (0 means EOF) to Exit:
-			       ; or fall through to test for lowercase
+    ; if (Buff < 'a') goto Write;
+    cmp byte [Buff], 061h      ; compare with ASCII 'a'
+    jb Write                   ; jump if below (i.e., not lowercase)
+    ; if (Buff > 'z') goto Write;
+    cmp byte [Buff], 07Ah      ; compare with ASCII 'z'
+    ja Write                   ; jump if above (i.e., not lowercase)
 
-	cmp byte [Buff],61h    ; Test input char against lowercase 'a'
-	jb Write               ; If below 'a' in ASCII chart, not lowercase
-	cmp byte [Buff],7Ah    ; Test input char against lowercase 'z'
-	ja Write               ; If above 'z' in ASCII chart, not lowercase
+    ; Buff = Buff - 0x20;  // convert lowercase to uppercase
+    sub byte [Buff], 020h      ; convert ASCII lowercase to uppercase
 
-                           ; At this point, we have a lowercase character
-	sub byte [Buff],20h    ; Subtract 20h from lowercase to give uppercase...
-                           ; ...and then write out the char to stdout
-Write:  
-    mov rax,1      ; Specify sys_write call
-    mov rdi,1      ; Specify File Descriptor 1: Standard output
-    mov rsi,Buff   ; Pass address of the character to write
-    mov rdx,1      ; Pass number of chars to write
-    syscall	       ; Call sys_write...
-    jmp Read       ; ...then go to the beginning to get another character
-        
-Exit:   ret        
+Write:
+    ; write(1, &Buff, 1)
+    mov rax, 1                 ; syscall ID: 1 (sys_write)
+    mov rdi, 1                 ; arg_01: 1 (stdout file descriptor)
+    mov rsi, Buff              ; arg_02: Buff (address of character to write)
+    mov rdx, 1                 ; arg_03: 1 (write 1 byte)
+    syscall                    ; invoke kernel
 
-;Exit:
-     mov rax,60    ; 60 = exit the program
-;    mov rdi,0     ; Return value in rdi 0 = nothing to return
-;    syscall       ; Call syscall to exit
+    jmp Read                   ; loop back to read next character
+
+Exit:
+    ret                        ; return from main (end program)

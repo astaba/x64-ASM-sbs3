@@ -10,7 +10,7 @@ AS = nasm
 CFLAGS = -m64 -fno-pie -no-pie -Wall
 # CFLAGS = -Wall
 LDFLAGS = -g
-ASFLAGS = -f elf64 -F dwarf
+ASFLAGS = -f elf64 -F stabs
 
 SOURCES = $(wildcard *.asm)
 OBJECTS = $(subst .asm,.o,$(SOURCES))

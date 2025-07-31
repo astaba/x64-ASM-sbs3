@@ -11,16 +11,14 @@
 SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark stack non-executable (security)
 
 SECTION .data
-    Msg: db "Congratulation! ", \
-    "You made your first syscall.", \
-    0x0A                           ; The string to print followed by newline
+    Msg: db "Eat at Joe's!",0x0A    ; The string to print followed by newline
     MsgLen: equ $ - Msg             ; Compute the length of the string
 
-SECTION .bss
-    ; No uninitialized data in this program
+SECTION .bss                        ; No uninitialized data in this program
 
 SECTION .text
-    global _start                  ; Make _start symbol visible to the linker
+
+global _start                       ; Make _start symbol visible to the linker
 
 _start:
     ; Function prologue (for debugger's sake, though not required in bare syscalls)

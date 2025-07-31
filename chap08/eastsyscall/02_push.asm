@@ -1,7 +1,7 @@
 ; ./chap08/eastsyscall/02_push.asm
 
-; After pushing values to the stack start examining it with following
-; command to have an clear vue of the precise way individual data are piled
+; HACK: After pushing values to the stack start examining it with the following
+; command to have a clear vue of the precise way individual data are piled
 ; downward in upward little endian order for each data.
 ; x/2xh <rsp value> : display 2 times in hexadecimal(x) halfwords(h:16-bits)
 ; x/4xb <rsp value> : display 4 times in hexadecimal(x) onebytes(b:8-bits)

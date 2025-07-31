@@ -1,13 +1,19 @@
 ; ------------------------------------------------------------------------------
-; Source file   : x64ASM_sbs4/chap08/uppercaser2gcc/sandbox.asm
-; Version       : 2.0
+; Source file   : x64ASM_sbs4/chap08/uppercaser2gcc/uppercaser4gcc.asm
+; Version       : 4.0
 ; Description   : demonstrating simple text file I/O (through redirection) for
 ;                 reading an input file to a buffer in blocks, forcing lowercase
 ;                 characters to uppercase, and writing the modified buffer to an
 ;                 output file.
 ; Usage         : uppercaser2 > (output file) < (input file)
 ; Build commands: nasm -f elf64 -g -F stabs eatsyscall.asm
-; NOTE: Process input by 0x80-byte blocks and handle sys_call errors.
+; NOTE: Improvement:
+; * Process input by 0x80-byte blocks.
+; * Handle sys_call errors.
+; * Scan all characters upward, from low memory address to higher.
+; This version is better for debugging because it's often easier to read buffer
+; memory during execution since it reflects the "natural" byte layout in memory
+; (Buffer[0], Buffer[1], ...).
 ; ------------------------------------------------------------------------------
 
 section .note.GNU-stack           ; Mark stack non-executable (security)
@@ -19,7 +25,7 @@ section .data
 	errmsg_write_len: equ $ - errmsg_write
 
 section .bss
-	BUFFLEN: equ 0x80              ; Buffer length
+	BUFFLEN: equ 0x80             ; Buffer length
 	Buffer: resb BUFFLEN          ; Reserve 128 bytes buffer
 
 section .text
@@ -29,24 +35,23 @@ main:
 	mov rbp, rsp                  ; Set up base pointer (for debugging purposes)
 
 Read:
-    ; read(0, &Buffer, 1)
+    ; read(0, &Buffer, BUFFLEN)
 	mov rax, 0                    ; syscall ID: 0 (sys_read)
 	mov rdi, 0                    ; arg_01: 0 (stdin file descriptor)
 	mov rsi, Buffer               ; arg_02: Buff (address of buffer)
 	mov rdx, BUFFLEN              ; arg_03: 1 (read 1 byte)
 	syscall                       ; invoke kernel
     ; if (rax == -1) goto Error_read;
-	test rax, rax                 ; Check if read returned -1
-	js Error_read                 ; If so, error
+	test rax, rax                 ; Performs a non-modifying bit AND and check
+	js Error_read                 ; SF(sign flag) is set: rax < 0 meaning error
 
 	mov r12, rax                  ; Save read char num for latter sys_write
     ; if (rax == 0) goto Exit;
 	cmp rax, 0                    ; check if EOF (syscall returned 0)
 	je Exit                       ; if so, exit program
 
-	mov rbx, rax                  ; Save num_read to scan from last to first
-	mov r13, Buffer               ; Save buffer starting point and dec it so
-	dec r13                       ; rbx not start out of bound in [r13 + rbx]
+	xor rbx, rbx                  ; Clear rbx
+	mov r13, Buffer               ; Save buffer starting point
 
 Scan:
     ; if (Buffer < 'a') goto Next;
@@ -59,8 +64,9 @@ Scan:
 	sub byte [r13 + rbx], 0x20    ; convert ASCII lowercase to uppercase
 
 Next:
-    ; if (rbx == 0) goto Write;
-	dec rbx                       ; Decrement rbx
+    ; if (rbx == r12) goto Write;
+	inc rbx                       ; Increment rbx
+	cmp r12, rbx
 	jnz Scan                      ; Loop back until all buffer is scanned
 
     ; write(1, &Buffer, r12)

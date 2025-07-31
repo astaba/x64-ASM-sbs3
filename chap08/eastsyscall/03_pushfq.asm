@@ -1,7 +1,7 @@
 ; x64ASM_sbs4/chap08/eastsyscall/03_pushfq.asm
 
-; Remember that the MOV instruction will not operate on the RFlags register.
-; If you want to load a copy of RFlags into a 64-bit register,
+; NOTE: Remember that the MOV instruction will not operate on the RFlags
+; register. If you want to load a copy of RFlags into a 64-bit register,
 ; you must first push RFlags onto the stack with PUSHFQ and then
 ; pop the flags value off the stack into the register of your choice with POP.
 ; Getting RFlags into RBX is thus done with the following code
