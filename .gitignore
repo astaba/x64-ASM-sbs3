@@ -1,5 +1,6 @@
 # Ignore object files
 *.o
+sandbox.*
 # Ignore executable files
 *.out
 *.exe
