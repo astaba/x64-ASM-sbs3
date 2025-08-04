@@ -4,32 +4,34 @@
 ;  Last update     : 5/8/2023
 ;  Author          : Jeff Duntemann
 ;  Description     : A simple program in assembly for Linux, using NASM 2.15
-;    under the SASM IDE, demonstrating the conversion of binary values to 
-;    hexadecimal strings. It acts as a very simple hex dump utility for files, 
+;    under the SASM IDE, demonstrating the conversion of binary values to
+;    hexadecimal strings. It acts as a very simple hex dump utility for files,
 ;    without the ASCII equivalent column.
 ;
 ;  Run it this way:
-;    hexdump1gcc < (input file)  
+;    hexdump1gcc < (input file)
 ;
 ;  Build using SASM's default build setup for x64
+; WARNING: Big take away from the bug: When you test filter programs like this
+; one always filter big files with lots of characters then diff output files.
+; Keep little strings for difficult but insightful debugging sessions.
 
-;
 SECTION .bss              ; Section containing uninitialized data
 
-	BUFFLEN	equ 16        ; We read the file 16 bytes at a time
-	Buff: 	resb BUFFLEN  ; Text buffer itself, reserve 16 bytes
-	
+    BUFFLEN equ 16        ; We read the file 16 bytes at a time
+    Buff:   resb BUFFLEN  ; Text buffer itself, reserve 16 bytes
+
 SECTION .data             ; Section containing initialised data
 
-    HexStr:	db " 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",10
+    HexStr: db " 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",10
     HEXLEN equ $-HexStr
 
     Digits: db "0123456789ABCDEF"
-		
+
 SECTION .text             ; Section containing code
 
 global  main              ; Linker needs this to find the entry point!
-	
+
 main:
     mov rbp,rsp       ; SASM Needs this for debugging
 
@@ -45,8 +47,14 @@ Read:
     je Done               ; Jump If Equal (to 0, from compare)
 
 ; Set up the registers for the process buffer step:parm
+    ; WARNING: According to System V ABI for linux both RSI and RDI are
+    ; callee-clobbered registers, meaning sys_read is free to modify them.
+    ; Therefore re-initializing them is good practice for correctness and
+    ; portability. However since RDI is never used in the Scan loop, its
+    ; code line is redundant and unnecessary.
     mov rsi,Buff          ; Place address of file buffer into esi
     mov rdi,HexStr        ; Place address of line string into edi
+
     xor rcx,rcx           ; Clear line string pointer to 0
 
 ; Go through the buffer and convert binary values to hex digits:
@@ -77,7 +85,15 @@ Scan:
 ; Bump the buffer pointer to the next character and see if we're done:
     inc rcx         ; Increment line string pointer
     cmp rcx,r15     ; Compare to the number of characters in the buffer
-    jna Scan        ; Loop back if rcx is <= number of chars in buffer
+    ; BUG: NASTY VICIOUS BUG.
+    ; jna allows for one iteration too many, skipping the EOL (Ox0A) and
+    ; encroaching two bytes deep on the next memory data which is Digits.
+    ; The two first bytes (0 and 1) are crushed into the unknown by what ever
+    ; out-of-bound data is right beyond Buff size. As a result all hexadecimal
+    ; translation requiring 0 and 1 are reliable only for the 16 bytes in the
+    ; first iteration. Thereafter those zeros and ones rely on luck,
+    ; an invitation to desaster.
+    jna Scan      ; Loop back if rcx is <= number of chars in buffer
 
 ; Write the line of hexadecimal values to stdout:
     mov rax,1       ; Specify syscall call 1: sys_write

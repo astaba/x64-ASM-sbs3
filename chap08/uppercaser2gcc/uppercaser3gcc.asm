@@ -48,17 +48,17 @@ Read:
 
 	mov rbx, rax                  ; Save num_read to scan from last to first
 	mov r13, Buffer               ; Save buffer starting point and dec it so
-	dec r13                       ; rbx not start out of bound in [r13 + rbx]
+	; dec r13                       ; rbx not start out of bound in [r13 + rbx]
 
 Scan:
     ; if (Buffer < 'a') goto Next;
-	cmp byte [r13 + rbx], 0x61    ; Test input char against lowercase 'a'
+	cmp byte [r13-1+rbx], 0x61    ; Test input char against lowercase 'a'
 	jb Next                       ; If below 'a' in ASCII chart, not lowercase
 	; if (Buffer > 'z') goto Next;
-	cmp byte [r13 + rbx], 0x7A    ; Test input char against lowercase 'z'
+	cmp byte [r13-1+rbx], 0x7A    ; Test input char against lowercase 'z'
 	ja Next                       ; If above 'z' in ASCII chart, not lowercase
 	; Buffer = Buffer - 0x20;
-	sub byte [r13 + rbx], 0x20    ; convert ASCII lowercase to uppercase
+	sub byte [r13-1+rbx], 0x20    ; convert ASCII lowercase to uppercase
 
 Next:
     ; if (rbx == 0) goto Write;

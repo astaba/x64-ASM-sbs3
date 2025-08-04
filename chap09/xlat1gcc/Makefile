@@ -1,4 +1,4 @@
-# x64ASM_sbs4/chap08/hexdump1gcc/Makefile
+# x64ASM_sbs4/chap09/xlat1gcc/Makefile
 # CTRL-X + 2: to shift gdb TUI pane
 
 .PHONY: all clean

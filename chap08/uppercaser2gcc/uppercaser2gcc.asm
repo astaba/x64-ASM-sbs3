@@ -43,16 +43,16 @@ Read:
 ; Set up the registers for the process buffer step:
 	mov rbx,rax      ; Place the number of bytes read into rbx
 	mov r13,Buff     ; Place address of buffer into r13
- 	dec r13          ; Adjust count to offset
+    ; dec r13          ; Adjust count to offset
 
 ; Go through the buffer and convert lowercase to uppercase characters:
 Scan:
-    cmp byte [r13+rbx],61h  ; Test input char against lowercase 'a'
-    jb .Next                ; If below 'a' in ASCII, not lowercase
-    cmp byte [r13+rbx],7Ah  ; Test input char against lowercase 'z'
-    ja .Next                ; If above 'z' in ASCII, not lowercase
-                            ; At this point, we have a lowercase char
-    sub byte [r13+rbx],20h  ; Subtract 20h to give uppercase...
+    cmp byte [r13-1+rbx],61h  ; Test input char against lowercase 'a'
+    jb .Next                  ; If below 'a' in ASCII, not lowercase
+    cmp byte [r13-1+rbx],7Ah  ; Test input char against lowercase 'z'
+    ja .Next                  ; If above 'z' in ASCII, not lowercase
+                              ; At this point, we have a lowercase char
+    sub byte [r13-1+rbx],20h  ; Subtract 20h to give uppercase...
 .Next:
     dec rbx                 ; Decrement counter
     cmp rbx,0

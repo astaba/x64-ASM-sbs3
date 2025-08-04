@@ -21,7 +21,7 @@ SECTION .data       ; Section containing initialised data
 	
     StatMsg: db "Processing...",10
     StatLen: equ $-StatMsg
-    DoneMsg: db "...done!",10
+    DoneMsg: db 10,"...done!",10
     DoneLen: equ $-DoneMsg
 	
 ; The following translation table translates all lowercase characters
