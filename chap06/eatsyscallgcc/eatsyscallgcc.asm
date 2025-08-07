@@ -12,6 +12,7 @@
 ;
 ;  Build using the default build configuration in SASM
 ;
+SECTION .note.GNU-stack
 
 SECTION .data	       ; Section containing initialised data
 	

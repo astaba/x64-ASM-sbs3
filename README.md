@@ -1,6 +1,37 @@
 # Assembly Language
 
 x64 Assembly Language Step-by-Step, Programming with Linux® 4TH Edition by Jeff Duntemann
+x64 Assembly Language Step-by-Step 4TH Edition by Jeff Duntemann
+
+## Building
+
+The variable names `CFLAGS`, `ASFLAGS`, and `LDFLAGS` are a common convention used to organize flags for the C compiler, assembler, and linker, respectively.
+
+Here's a breakdown of which flags go to which actor, with a special focus on the `-g` flag:
+
+-----
+
+### C Compiler (GCC)
+
+  * **`CFLAGS = -m64 -fno-pie -no-pie -Wall`**: These flags are sent to `gcc` when it compiles C source code. In your `Makefile`, `gcc` is only used to link the object file, so these flags aren't directly applied to a compile step. However, if you had C code, they would be used.
+      * `-m64`: Generates code for a 64-bit target.
+      * `-fno-pie`, `-no-pie`: Disable Position Independent Executable, which is important for certain types of assembly code.
+      * `-Wall`: Turns on all standard compiler warnings.
+
+-----
+
+### Assembler (NASM)
+
+  * **`ASFLAGS = -f elf64 -F dwarf`**: These are flags for `nasm`.
+      * `-f elf64`: Specifies the output format as 64-bit ELF, which is the standard format for Linux executables.
+      * `-F dwarf`: Specifies the debug information format. DWARF is a standard format for debuggers. This flag is directly related to the `-g` flag's purpose.
+
+-----
+
+### Linker (GCC and `ld` under the hood)
+
+  * **`LDFLAGS = -g`**: This is a flag for the **linker**, which, in your `Makefile`, is invoked by `gcc`. When you run `gcc` to link object files, it automatically calls the linker (`ld`) behind the scenes.
+      * **`-g`**: This flag tells the linker to embed debugging symbols and information into the final executable. These symbols are essential for using a debugger like `gdb` to inspect variables, set breakpoints, and step through your code. It works in conjunction with the `-F dwarf` flag you passed to `nasm`, as `nasm` generates the raw debugging data in the object file, and the linker incorporates that data into the final executable.
 
 ## Partial x64 Instruction Reference
 

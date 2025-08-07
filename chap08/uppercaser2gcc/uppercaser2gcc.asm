@@ -15,6 +15,8 @@
 ;  Build in SASM using the default make lines and x64 checked
 ;
 
+SECTION .note.GNU-stack
+
 SECTION .bss                ; Section containing uninitialized data
 
 	BUFFLEN	  equ 128       ; Length of buffer
