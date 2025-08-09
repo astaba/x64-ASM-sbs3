@@ -3,18 +3,18 @@
 ;  Created date    : 6/18/2022
 ;  Last update     : 5/17/2023
 ;  Author          : Jeff Duntemann
-;  Description     : A simple program in assembly for Linux, using 
-;                  : NASM 2.15, demonstrating the use of escape 
+;  Description     : Listing 10.6
+;                  : A simple program in assembly for Linux, using
+;                  : NASM 2.15, demonstrating the use of escape
 ;                  : sequences to do simple "full-screen" text output
 ;                  : to a terminal like Konsole.
 ;
 ;  Build using SASM's x64 build configuration.
-;
 ;  Run by executing the executable binary file.
-;
 
 section .data      ; Section containing initialised data
-
+    ; TRICK: Test escape sequences on the shell with: echo -e "\e[..."
+    ; \e == <ESC>, [... == sequence
     SCRWIDTH       equ 80             ; Default is 80 chars wide
     PosTerm:       db 27,"[01;01H"    ; <ESC>[<Y>;<X>H
     POSLEN         equ $-PosTerm      ; Length of term position string
@@ -25,11 +25,11 @@ section .data      ; Section containing initialised data
     Prompt:        db "Press Enter: " ; User prompt
     PROMPTLEN      equ $-Prompt       ; Length of user prompt
 
-; This table gives us pairs of ASCII digits from 0-80. Rather than 
-; calculate ASCII digits to insert in the terminal control string, 
-; we look them up in the table and read back two digits at once to 
-; a 16-bit register like DX, which we then poke into the terminal 
-; control string PosTerm at the appropriate place. See GotoXY.
+; This table gives us pairs of ASCII digits from 0-80. Rather than
+; calculate ASCII digits to insert in the terminal control string,
+; we look them up in the table and read back two digits at once to
+; a 16-bit register like DX, which we then poke into the terminal
+; control string PosTerm at the appropriate place. See PositCursor.
 ; If you intend to work on a larger console than 80 X 80, you must
 ; add additional ASCII digit encoding to the end of Digits. Keep in
 ; mind that the code shown here will only work up to 99 X 99.
@@ -43,7 +43,9 @@ SECTION .bss       ; Section containing uninitialized data
 SECTION .text      ; Section containing code
 
 ;-------------------------------------------------------------------------
-; ClrScr:       Clear the Linux console
+; FILE MODULE CALLS: 1 (main)
+;-------------------------------------------------------------------------
+; ClrScreen:       Clear the Linux console
 ; UPDATED:      9/13/2022
 ; IN:           Nothing
 ; RETURNS:      Nothing
@@ -52,7 +54,7 @@ SECTION .text      ; Section containing code
 ; DESCRIPTION:  Sends the predefined control Estring <ESC>[2J to the
 ;               console, which clears the full display
 
-ClrScr:
+ClrScreen:
     push rax          ; Save pertinent registers
     push rbx
     push rcx
@@ -74,8 +76,11 @@ ClrScr:
 
 
 ;-------------------------------------------------------------------------
-; GotoXY:       Position the Linux Console cursor to an X,Y position
+; FILE MODULE CALLS: 2 (AlignCenter, main)
+;-------------------------------------------------------------------------
+; PositCursor:       Position the Linux Console cursor to an X,Y position
 ; UPDATED:      9/13/2022
+;                                              TODO: What does it mean ???
 ; IN:           X in AH, Y     nop            ; This no-op keeps gdb happy...in AL
 ; RETURNS:      Nothing
 ; MODIFIES:     PosTerm terminal control sequence string
@@ -83,10 +88,10 @@ ClrScr:
 ; DESCRIPTION:  Prepares a terminal control string for the X,Y coordinates
 ;               passed in AL and AH and calls sys_write to position the
 ;               console cursor to that X,Y position. Writing text to the
-;               console after calling GotoXY will begin display of text
+;               console after calling PositCursor will begin display of text
 ;               at that X,Y position.
 
-GotoXY:
+PositCursor:
     push rax                ; Save caller's registers
     push rbx
     push rcx
@@ -97,14 +102,14 @@ GotoXY:
     xor rcx,rcx             ; Ditto RCX
 
 ; Poke the Y digits:
-    mov bl,al                   ; Put Y value into scale term RBX
-    mov cx,[Digits+rbx*2]  ; Fetch decimal digits to CX
-    mov [PosTerm+2],cx ; Poke digits into control string
+    mov bl,al               ; Put Y value into scale term RBX
+    mov cx,[Digits+rbx*2]   ; Fetch decimal digits to CX
+    mov [PosTerm+2],cx      ; Poke digits into control string
 
 ; Poke the X digits:
-    mov bl,ah              ; Put X value into scale term EBX
-    mov cx,[Digits+rbx*2]  ; Fetch decimal digits to CX
-    mov [PosTerm+5],cx     ; Poke digits into control string
+    mov bl,ah               ; Put X value into scale term EBX
+    mov cx,[Digits+rbx*2]   ; Fetch decimal digits to CX
+    mov [PosTerm+5],cx      ; Poke digits into control string
 
 ; Send control sequence to stdout:
     mov rsi,PosTerm         ; Pass address of the control string
@@ -114,36 +119,40 @@ GotoXY:
 ; Wrap up and go home:
     pop rsi                 ; Restore caller's registers
     pop rdx
-    pop rcx			   
+    pop rcx
     pop rbx
     pop rax
     ret                     ; Go home
 
 ;-------------------------------------------------------------------------
-; WriteCtr:     Send a string centered to an 80-char wide Linux console
+; FILE MODULE CALLS: 1 (main)
+;-------------------------------------------------------------------------
+; AlignCenter:     Send a string centered to an 80-char wide Linux console
 ; UPDATED:      5/10/2023
 ; IN:           Y value in AL, String address in RSI, string length in RDX
 ; RETURNS:      Nothing
 ; MODIFIES:     PosTerm terminal control sequence string
-; CALLS:        GotoXY, WriteStr
+; CALLS:        PositCursor, WriteStr
 ; DESCRIPTION:  Displays a string to the Linux console centered in an
-;               80-column display. Calculates the X for the passed-in 
-;               string length, then calls GotoXY and WriteStr to send 
+;               80-column display. Calculates the X for the passed-in
+;               string length, then calls PositCursor and WriteStr to send
 ;               the string to the console
 
-WriteCtr:
+AlignCenter:
     push rbx           ; Save caller's RBX
     xor rbx,rbx        ; Zero RBX
     mov bl,SCRWIDTH    ; Load the screen width value to BL
     sub bl,dl          ; Take diff. of screen width and string length
     shr bl,1           ; Divide difference by two for X value
-    mov ah,bl          ; GotoXY requires X value in AH
-    call GotoXY        ; Position the cursor for display
+    mov ah,bl          ; PositCursor requires X value in AH
+    call PositCursor   ; Position the cursor for display
     call WriteStr      ; Write the string to the console
     pop rbx            ; Restore caller's RBX
     ret                ; Go home
 
 
+;-------------------------------------------------------------------------
+; FILE MODULE CALLS: 4 (ClrScreen, PositCursor, AlignCenter, main)
 ;-------------------------------------------------------------------------
 ; WriteStr:     Send a string to the Linux console
 ; UPDATED:      5/10/2023
@@ -151,7 +160,7 @@ WriteCtr:
 ; RETURNS:      Nothing
 ; MODIFIES:     Nothing
 ; CALLS:        Kernel sys_write
-; DESCRIPTION:  Displays a string to the Linux console through a 
+; DESCRIPTION:  Displays a string to the Linux console through a
 ;               sys_write kernel call
 
 WriteStr:
@@ -171,19 +180,19 @@ main:
     mov rbp, rsp   ; for correct debugging
 
 ; First we clear the terminal display...
-    call ClrScr
+    call ClrScreen
 
-; Then we post the ad message centered on the 80-wide console:
+; Then we post the ad message centered SASM console,
+; assuming SAMS console is 24-high 80-wide:
     xor rax,rax    ; Zero out RAX.
-    mov al,12
-    mov rsi,AdMsg
-    mov rdx,ADLEN
-    call WriteCtr
+    mov al,12      ; provides Y coordinate to next CALL
+    mov rsi,AdMsg  ; provides msg address to next CALL
+    mov rdx,ADLEN  ; provides msg length to next CALL
+    call AlignCenter
 
 ; Position the cursor for the "Press Enter" prompt:
-    mov rax,0117h  ; X,Y = 1,23 as a single hex value in AX
-    call GotoXY    ; Position the cursor
-
+    mov rax,0117h       ; X,Y = 1,23 as a single hex value in AX
+    call PositCursor    ; Position the cursor
 ; Display the "Press Enter" prompt:
     mov rsi,Prompt      ; Pass offset of the prompt
     mov rdx,PROMPTLEN   ; Pass the length of the prompt
@@ -191,12 +200,11 @@ main:
 
 ; Wait for the user to press Enter:
     mov rax,0      ; Code for sys_read
-    mov rdi,0      ; Specify File Descriptor 0: Stdin	
+    mov rdi,0      ; Specify File Descriptor 0: Stdin
     syscall        ; Make kernel call
 
 ; And we're done!
 Exit:
     pop rbp
     ret
-   
 

@@ -17,7 +17,9 @@
 ;  Build using SASM's default build setup for x64
 ;  To test from a terminal, save out the executable to disk.
 
-SECTION .data       ; Section containing initialised data
+section .note.GNU-stack   ; Mark stack non-executable (security)
+
+SECTION .data             ; Section containing initialised data
 	
     StatMsg: db "Processing...",10
     StatLen: equ $-StatMsg

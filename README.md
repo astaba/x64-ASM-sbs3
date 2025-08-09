@@ -1,6 +1,5 @@
 # Assembly Language
 
-x64 Assembly Language Step-by-Step, Programming with Linux® 4TH Edition by Jeff Duntemann
 x64 Assembly Language Step-by-Step 4TH Edition by Jeff Duntemann
 
 ## Building
@@ -209,3 +208,180 @@ Next:
     ;.
     ;.
 ```
+
+## The Standard Rules (x64 Linux System V ABI)
+
+The operating system defines a contract for how functions should handle registers. This contract is called the Application Binary Interface (ABI). Registers are divided into two categories:
+
+1.  **Caller-Saved (Volatile):** `RAX`, `RCX`, `RDX`, `RSI`, `RDI`, `R8`-`R11`.
+    * A function is **free to use and change** these registers without saving them.
+    * If the **calling routine** needs the values in these registers after the function returns, it **must save them itself** (e.g., `push rax`).
+
+2.  **Callee-Saved (Non-Volatile):** `RBX`, `RBP`, `RSP`, `R12`-`R15`.
+    * A function **must preserve** these registers.
+    * If the **called function** wants to use one of these, it **must save the original value** (e.g., `push rbx`) at the beginning and restore it (`pop rbx`) before it returns.
+
+### The Rationale for This Code's Choices
+
+Your observation is correct: many of the `push` and `pop` instructions in this code are technically unnecessary according to the ABI.
+
+* **`ClearLine`**, **`PrintLine`**, and **`LoadBuff`** are all saving and restoring caller-saved registers (`RAX`, `RCX`, `RDX`, `RSI`, `RDI`).
+* The `syscall` instruction is a special case that can clobber many registers, which might explain the cautiousness in `PrintLine` and `LoadBuff`.
+
+The programmer's rational is likely: **"I will save and restore every register my function touches, regardless of the ABI rules."** This is a simple, robust rule that guarantees no accidental side effects, but it comes at a cost.
+
+### The Trade-off: Correctness vs. Performance
+
+* **Pros of this approach:** The code is very safe. You never have to worry about a register's value being unexpectedly changed by a function call. It's easy to read and debug.
+* **Cons of this approach:** It is **less efficient**. Each `push` and `pop` is a memory access to the stack, which is slower than using a register. The `syscall` itself is slow, but adding extra `push` and `pop` operations unnecessarily increases the overhead of the entire program.
+
+### Conclusion
+
+The code works and is correct, but it is not optimized for performance. A more efficient and standard approach would be to:
+
+* **Only save callee-saved registers** (`RBX`, `RBP`, etc.) that are used in a function.
+* Let the **calling function** be responsible for saving any caller-saved registers it needs to preserve across a function call.
+
+Your critical eye has identified a key point of discussion for any assembly programmer: striking a balance between code correctness, readability, and performance
+
+## Embedding data in the .code segment
+
+From [newlinestest.asm](./chap10/newlines/newlinestest.asm).
+
+Advanced concept in assembly: **embedding data directly within the code section**. This is indeed a departure from typical C programming habits where data is clearly separated into `.data` or `.rodata` sections.
+
+Let's break down the concept of "constant" in this context and where `EOLs` is located.
+
+### The Concept of "Constant" in this Procedure
+
+In C, when you declare a `const` variable, it means its *value* cannot change after initialization. In assembly, "constant data" often refers to data whose value is known at assembly time and doesn't change during program execution.
+
+The key here is *where* that constant data is stored:
+
+* **Traditional C/Assembly:** Constants are typically put in the `.data` section (if mutable, though `const` in C would typically go to `.rodata` for read-only data). This separates data from instructions.
+* **This Assembly Example:** The `EOLs` data is placed directly after the `ret` instruction within the `.text` (code) section.
+
+The comment "This procedure demonstrates placing constant data in the procedure definition itself, rather than in the .data or .bss sections" is the crucial part. It's a technique, not a standard practice for all constant data.
+
+### Where is `EOLs` Located at Runtime?
+
+You are correct that `EOLs` is defined "out of any segment" in the sense that it's not explicitly in `.data` or `.bss`. However, when the assembler processes this code, it will place `EOLs` directly into the **`.text` segment** (the code segment) of the final executable.
+
+Here's why and what happens:
+
+1.  **Assembler's Job:** The assembler reads your `.asm` file. When it encounters `db 10,10,...`, it simply converts those values into bytes and places them sequentially in the output file wherever it is currently building the `.text` segment.
+2.  **`ret` Instruction:** The `ret` instruction pops the return address from the stack and jumps to it. It does *not* know or care what bytes immediately follow it in memory.
+3.  **Execution Flow:**
+    * The `newlines` function is called.
+    * It executes its instructions (`cmp`, `ja`, `mov`, `syscall`).
+    * It hits `ret`. The CPU pops the return address and jumps *back to the caller*.
+    * The CPU **never executes the `EOLs` bytes as instructions** because the `ret` instruction diverts the program flow.
+
+### Why Do This? (Pros and Cons)
+
+**Pros:**
+
+* **Locality/Cache:** For very small, frequently accessed lookup tables or strings, placing them directly after the code that uses them can sometimes improve cache performance (though this is often negligible for such small data).
+* **Self-Contained Code:** It makes a function truly self-contained, as its data is right there with its instructions. This can be useful for position-independent code (PIC) or very specialized embedded systems.
+* **Short Jumps:** Sometimes, it can allow for smaller, more efficient relative addressing if the data is very close to the instructions.
+
+**Cons (and why it's generally discouraged for larger data):**
+
+* **Readability:** It makes the code harder to read and maintain, as data is mixed with instructions.
+* **Security (Executable Stack/Data):** Modern operating systems enforce **W^X (Write XOR Execute)**. This means memory pages are either writable OR executable, but not both.
+    * The `.text` segment is typically marked **executable (X)** but **read-only (R)** and **non-writable (W)**.
+    * The `.data` and `.bss` segments are typically marked **readable (R)** and **writable (W)** but **non-executable (X)**.
+    * If `EOLs` is in the `.text` segment, it will be read-only. If your code ever tried to modify `EOLs` (which it doesn't here), it would cause a segmentation fault.
+    * More importantly, if `EOLs` were ever accidentally executed as code (e.g., if a `jmp` or `call` instruction landed on it due to a bug), it would likely crash the program.
+* **Debugging:** It can make debugging more confusing, as a debugger might try to disassemble the data as if it were instructions.
+
+### Your Specific Questions:
+
+* **"Constant" concept:** In this case, "constant" means the data (`EOLs`) is fixed at compile time and is placed directly into the executable's code section. It's not meant to be changed during runtime.
+* **`EOLs` location:** At runtime, `EOLs` is located in the **`.text` segment** (the code segment) of your program's memory space.
+
+This technique is a valid, though often niche, way to organize data in assembly. It's good that you questioned it, as it's not the most common or generally recommended practice for larger data sets due to the security and maintenance implications.
+
+
+## GLOBAL declarations location
+
+From [textlib.asm](./chap10/06textlib/textlib.asm).
+
+```asm
+; Exported data items and procedures:
+GLOBAL  Buff, DumpLine, ASCLine, HexDigits, BinDigits
+GLOBAL  ClearLine, DumpChar, NewLines, PrintLine, LoadBuff
+```
+
+The code example you've provided does indeed seem to contradict the rule stated in the book (page 350 line -7). This kind of discrepancy can be quite confusing, but it highlights a key difference between theoretical rules and practical compiler/assembler behavior.
+
+The rule from the book is a best practice for clarity and portability, but it's not a strict requirement for most modern assemblers, including NASM (which is commonly used for x64 assembly).
+
+The reason the provided example works despite not placing the `GLOBAL` directive at the very top of the `.data` or `.text` sections is due to how the assembler and linker process the code.
+
+---
+
+### How Assemblers and Linkers Handle `GLOBAL`
+
+* **The Assembler's Role**: The assembler's primary job is to convert your human-readable assembly code into machine code and object files (`.o` files). When it encounters a label like `Buff` or `ClearLine`, it records its location (its offset from the beginning of its section). When it sees the `GLOBAL` directive, it doesn't need to know the label's address immediately; it just flags that label as a **public symbol**. It saves this information in the object file's symbol table.
+
+* **The Linker's Role**: The linker's job is to combine multiple object files and libraries into a final executable. It reads the symbol tables from all the object files. When it sees a public symbol (like `GLOBAL Buff`), it knows that this symbol is meant to be visible to other files. When another file needs to refer to `Buff`, the linker finds `Buff`'s address in the correct object file and "patches" the calling code with that address.
+
+Because the assembler and linker work in two passes, the assembler doesn't need the `GLOBAL` directive to be physically located before the label is defined. It's smart enough to read the entire file, gather all label definitions and `GLOBAL` directives, and then build the symbol table for the linker.
+
+The book's advice is a "rule of thumb" for organization. It's good practice to declare global symbols early because:
+1.  **Readability**: It makes it immediately clear which symbols are meant to be used by other parts of the program or other files.
+2.  **Portability**: Some older or more rigid assemblers might require a specific order, so following this rule ensures the code is compatible with a wider range of tools.
+
+In your example, the assembler sees the label `DumpLine`, then later sees `GLOBAL DumpLine`. It has all the information it needs to correctly create the object file, so there is no error. The final `DotXlat` label also defines an item in the `.data` section, even though the `GLOBAL` directives were placed before it. This works because the assembler reads the whole section to determine the final offsets for everything.
+
+## Equates: EQU
+
+From [textlib.asm](./chap10/06textlib/textlib.asm).
+
+```asm
+DumpLine:   db " 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 "
+DUMPLEN     EQU $-DumpLine
+ASCLine:    db "|................|",10
+ASCLEN      EQU $-ASCLine
+FULLLEN     EQU $-DumpLine
+
+; The equates shown above must be applied to variables to be exported:
+DumpLength: dq DUMPLEN
+ASCLength:  dq ASCLEN
+FullLength: dq FULLLEN
+BuffLength: dq BUFFLEN
+```
+
+The confusion here lies in the dual use of the term "equates" and the distinction between an immediate value and a memory-based variable.
+
+In the context of the assembly code snippet, the "equates" are the lines that use the `EQU` directive. They define a symbol (a name) that represents a specific, constant value.
+
+```assembly
+BUFFLEN EQU 10h
+DUMPLEN EQU $-DumpLine
+```
+
+  * **`BUFFLEN`** is a name for the constant value `10h` (16 in decimal).
+  * **`DUMPLEN`** is a name for the constant value calculated by `$-DumpLine`. The `$` symbol means "current address," so this `EQU` calculates the length of the `DumpLine` string by subtracting its starting address from the current address.
+
+Equates are handled by the assembler during the assembly process. By the time the code is converted into a machine-readable format, every instance of `BUFFLEN` is replaced with the value `16`. They do not exist as variables in the final program's memory. They are just a convenience for the programmer, like `#define` in C.
+
+-----
+
+### Why the Book Recommends Storing Equates in Variables
+
+The book's author correctly points out that while some modern assemblers (like NASM) can export equates, it's not a universal feature. To ensure the value is available to other modules, it's safer and more portable to store the value in a named variable in a memory section like `.data`.
+
+This is what the example lines you quoted are doing:
+
+```assembly
+DumpLength: dq DUMPLEN
+ASCLength: dq ASCLEN
+FullLength: dq FULLLEN
+BuffLength: dq BUFFLEN
+```
+
+  * **`DumpLength: dq DUMPLEN`**: This line creates a variable in the `.data` section called `DumpLength`. It reserves a 64-bit quadword (`dq`) of memory and initializes it with the **constant value** defined by the `DUMPLEN` equate.
+
+The assembler first calculates the value of `DUMPLEN` (a number), then places that number into the memory reserved for the `DumpLength` variable. Now, `DumpLength` is a real, tangible piece of data in your program's memory that can be exported globally and accessed by other parts of your code. You can load its value into a register, modify it, or perform other operations that are not possible with a simple equate.

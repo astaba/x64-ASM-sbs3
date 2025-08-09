@@ -1,20 +1,20 @@
-;  Library name    : textlibgcc
-;  Version         : 2.0
-;  Created date    : 5/9/2022
-;  Last update     : 5/9/2023
-;  Author          : Jeff Duntemann
-;  Description     : A simple include library demonstrating the use of
-;                  : the %INCLUDE directive within SASM
+;  Module name      : textlib.asm
+;  Version          : 2.0
+;  Created date     : 9/14/2022
+;  Last update      : 7/18/2023
+;  Author           : Jeff Duntemann
+;  Description      : Listing 10.5
+;                   : A simple procedure library demonstrating the use of
+;                   : separately assembled code libraries via EXTERN
+;  Build using this command:
+;    nasm -f elf64 -g -F dwarf textlib.asm
 ;
-;  Note that this file cannot be assembled by itself, as SASM does not
-;  support separate assembly. It can only be used as the target of an
-;  %INCLUDE directive.
 ;
 
 SECTION .bss        ; Section containing uninitialized data
 
-    BUFFLEN  EQU 10h
-    Buff     resb BUFFLEN
+    BUFFLEN  EQU 10h       ; We read the input file 16 bytes at a time
+	Buff:    resb BUFFLEN  ; Reserve memory for the input file read buffer
 
 SECTION .data       ; Section containing initialised data
 
@@ -32,13 +32,31 @@ ASCLine:    db "|................|",10
 ASCLEN     EQU $-ASCLine
 FULLLEN    EQU $-DumpLine
 
+; The equates shown above must be applied to variables to be exported:
+DumpLength: dq DUMPLEN
+ASCLength:  dq ASCLEN
+FullLength: dq FULLLEN
+BuffLength: dq BUFFLEN
+
 ; The HexDigits table is used to convert numeric values to their hex
-; equivalents. Index by nybble without a scale: [HexDigits+eax]
+; equivalents. Index by nybble without a scale: [HexDigits+rax]
 HexDigits: db "0123456789ABCDEF"
 
+; This table allows us to generate text equivalents for binary numbers.
+; Index into the table by the nybble using a scale of 4:
+; [BinDigits + rcx*4]
+BinDigits:  db "0000","0001","0010","0011"
+            db "0100","0101","0110","0111"
+            db "1000","1001","1010","1011"
+            db "1100","1101","1110","1111"
+
+; Exported data items and procedures:
+GLOBAL  Buff, DumpLine, ASCLine, HexDigits, BinDigits
+GLOBAL  ClearLine, DumpChar, NewLines, PrintLine, LoadBuff
+
 ; This table is used for ASCII character translation, into the ASCII
-; portion of the hex dump line, via XLAT or ordinary memory lookup. 
-; All printable characters "play through" as themselves. The high 128 
+; portion of the hex dump line, via XLAT or ordinary memory lookup.
+; All printable characters "play through" as themselves. The high 128
 ; characters are translated to ASCII period (2Eh). The non-printable
 ; characters in the low 128 are also translated to ASCII period, as is
 ; char 127.
@@ -64,13 +82,13 @@ DotXlat:
 SECTION .text       ; Section containing code
 
 ;-------------------------------------------------------------------------
-; ClearLine:    Clear a hex dump line string to 16 0 values
-; UPDATED:      5/9/2023
-; IN:           Nothing
-; RETURNS:      Nothing
-; MODIFIES:     Nothing
-; CALLS:        DumpChar
-; DESCRIPTION:  The hex dump line string is cleared to binary 0 by
+; ClearLine:   Clear a hex dump line string to 16 0 values
+; UPDATED:     9/21/2022
+; IN:          Nothing
+; RETURNS:     Nothing
+; MODIFIES:    Nothing
+; CALLS:       DumpChar
+; DESCRIPTION: The hex dump line string is cleared to binary 0 by
 ;               calling DumpChar 16 times, passing it 0 each time.
 
 ClearLine:
@@ -94,7 +112,7 @@ ClearLine:
 
 ;-------------------------------------------------------------------------
 ; DumpChar:     "Poke" a value into the hex dump line string.
-; UPDATED:      5/9/2023
+; UPDATED:      9/21/2022
 ; IN:           Pass the 8-bit value to be poked in RAX.
 ;               Pass the value's position in the line (0-15) in RDX 
 ; RETURNS:      Nothing
@@ -110,24 +128,24 @@ DumpChar:
     push rdi    ; Save caller's RDI
 
 ; First we insert the input char into the ASCII portion of the dump line
-    mov bl,byte [DotXlat+rax]    ; Translate nonprintables to '.'
-    mov byte [ASCLine+rdx+1],bl   ; Write to ASCII portion
+    mov bl,byte [DotXlat+rax]      ; Translate nonprintables to '.'
+    mov byte [ASCLine+rdx+1],bl    ; Write to ASCII portion
 
 ; Next we insert the hex equivalent of the input char in the hex portion
 ; of the hex dump line:
-    mov rbx,rax           ; Save a second copy of the input char
-    lea rdi,[rdx*2+rdx]   ; Calc offset into line string (RDX X 3)
+    mov rbx,rax                    ; Save a second copy of the input char
+    lea rdi,[rdx*2+rdx]            ; Calc offset into line string (RDX X 3)
 
 ; Look up low nybble character and insert it into the string:
-    and rax,000000000000000Fh    ; Mask out all but the low nybble
-    mov al,byte [HexDigits+rax]  ; Look up the char equiv. of nybble
-    mov byte [DumpLine+rdi+2],al  ; Write the char equiv. to line string
+    and rax,000000000000000Fh      ; Mask out all but the low nybble
+    mov al,byte [HexDigits+rax]    ; Look up the char equivalent of nybble
+    mov byte [DumpLine+rdi+2],al   ; Write the char equivalent to line string
 
 ; Look up high nybble character and insert it into the string:
-    and rbx,00000000000000F0h    ; Mask out all the but second-lowest nybble
-    shr rbx,4                    ; Shift high 4 bits of byte into low 4 bits
-    mov bl,byte [HexDigits+rbx]  ; Look up char equiv. of nybble
-    mov byte [DumpLine+rdi+1],bl  ; Write the char equiv. to line string
+    and rbx,00000000000000F0h      ; Mask out all the but second-lowest nybble
+    shr rbx,4                      ; Shift high 4 bits of byte into low 4 bits
+    mov bl,byte [HexDigits+rbx]    ; Look up char equivalent of nybble
+    mov byte [DumpLine+rdi+1],bl   ; Write the char equiv. to line string
 
 ;Done! Let's go home:
     pop rdi    ; Restore caller's RDI
@@ -135,31 +153,69 @@ DumpChar:
     ret        ; Return to caller
 
 ;-------------------------------------------------------------------------
-; PrintLine:   Displays DumpLin to stdout
-; UPDATED:     5/9/2022
-; IN:          DumpLine, FULLEN
-; RETURNS:     Nothing
-; MODIFIES:    Nothing
-; CALLS:       Kernel sys_write
-; DESCRIPTION: The hex dump line string DumpLin is displayed to stdout 
-;              using syscall function sys_write. Registers used 
-;              are preserved, along with RCX & R11.
+; Newlines:     Sends between 1-15 newlines to the Linux console
+; UPDATED:      5/9/2023
+; IN:           # of newlines to send, from 1 to 15
+; RETURNS:      Nothing
+; MODIFIES:     Nothing
+; CALLS:        Kernel sys_write
+; DESCRIPTION:  The number of newline chareacters (0Ah) specified in RDX
+;               is sent to stdout using using SYSCALL sys_write. This
+;               procedure demonstrates placing constant data in the
+;               procedure definition itself, rather than in .data or .bss
+
+Newlines:
+    push rax       ; Push caller's registers
+    push rsi
+    push rdi
+    push rcx       ; Used by syscall
+    push rdx
+    push r11       ; Used by syscall
+
+    cmp rdx,15     ; Make sure caller didn't ask for more than 15
+    ja .exit       ; If so, exit without doing anything
+    mov rcx,EOLs   ; Put address of EOLs table into ECX
+    mov rax,1      ; Specify sys_write call
+    mov rdi,1      ; Specify File Descriptor 1: Standard output
+    syscall        ; Make the system call
+
+.exit:
+    pop r11        ; Restore all caller's registers
+    pop rdx
+    pop rcx
+    pop rdi
+    pop rsi
+    pop rax
+    ret            ; Go home!
+
+EOLs db 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10
+
+;-------------------------------------------------------------------------
+; PrintLine:    Displays the hex dump line string via SYSCALL sys_write
+; UPDATED:      5/9/2023
+; IN:           Nothing
+; RETURNS:      Nothing
+; MODIFIES:     RAX RCX RDX RDI RSI
+; CALLS:        SYSCALL sys_write
+; DESCRIPTION:  The hex dump line string DumpLine is displayed to stdout
+;               using SYSCALL sys_write.
+
 
 PrintLine:
     ; Alas, we don't have pushad anymore.
-    push rax
+    push rax         ; Push caller's registers
     push rbx
-    push rcx         ; syscall clobbers
+    push rcx         ; Used by syscall
     push rdx
     push rsi
     push rdi
-    push r11         ; syscall clobbers
+    push r11         ; Used by syscall
 
     mov rax,1        ; Specify sys_write call
     mov rdi,1        ; Specify File Descriptor 1: Standard output
     mov rsi,DumpLine ; Pass address of line string
     mov rdx,FULLLEN  ; Pass size of the line string
-    syscall          ; Make kernel call to display line string
+    syscall          ; Make system call to display line string
 
     pop r11          ; syscall clobbers
     pop rdi
@@ -170,15 +226,14 @@ PrintLine:
     pop rax
     ret              ; Return to caller
 
-
 ;-------------------------------------------------------------------------
 ; LoadBuff:    Fills a buffer with data from stdin via syscall sys_read
 ; UPDATED:     5/9/2023
 ; IN:          Nothing
 ; RETURNS:     # of bytes read in R15
-; MODIFIES:    RCX, R15, Buff
+; MODIFIES:    RAX, RDX, RSI, RDI, RCX, R15, Buff
 ; CALLS:       syscall sys_read
-; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin 
+; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin
 ;              using syscall sys_read and places it in Buff. Buffer
 ;              offset counter RCX is zeroed, because we're starting in
 ;              on a new buffer full of data. Caller must test value in

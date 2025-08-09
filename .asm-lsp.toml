@@ -1,0 +1,19 @@
+[[project]]
+path = ""
+version = "0.10.0"
+assembler = "nasm"
+instruction_set = "x86-64"
+
+[project.opts]
+compiler = "nasm"
+compile_flags_txt = [
+    "-f",
+    "elf64",
+    "-F",
+    "dwarf",
+    "-g",
+    "-l",
+    "asmlisting.lst",
+]
+diagnostics = true
+default_diagnostics = true

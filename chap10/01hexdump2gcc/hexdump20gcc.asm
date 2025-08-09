@@ -1,11 +1,11 @@
-;  Executable name : hexdump2gcc
+;  Executable name : hexdump20gcc
 ;  Version         : 2.0
 ;  Created date    : 5/9/2022
 ;  Last update     : 5/17/2023
 ;  Author          : Jeff Duntemann
-;  Description     : A simple hexdump utility demonstrating the use of
+;  Description     : Listing 10.1
+;                  : A simple hexdump utility demonstrating the use of
 ;                  : assembly language procedures
-;
 ;  Build using SASM's 64-bit build feature, which uses gcc & requires "main"
 ;  To run, type or paste some text into SASM's Input window and click Run.
 ;  The hex dump of the input text will appear in SASM's Output window.
@@ -19,7 +19,7 @@ SECTION .data      ; Section containing initialised data
 
 ; Here we have two parts of a single useful data structure, implementing
 ; the text line of a hex dump utility. The first part displays 16 bytes in
-; hex separated by spaces. Immediately following is a 16-character line 
+; hex separated by spaces. Immediately following is a 16-character line
 ; delimited by vertical bar characters. Because they are adjacent, the two
 ; parts can be referenced separately or as a single contiguous unit.
 ; Remember that if DumpLin is to be used separately, you must append an
@@ -36,12 +36,12 @@ FULLLEN         EQU $-DumpLine
 HexDigits:      db "0123456789ABCDEF"
 
 ; This table is used for ASCII character translation, into the ASCII
-; portion of the hex dump line, via XLAT or ordinary memory lookup. 
-; All printable characters "play through" as themselves. The high 128 
+; portion of the hex dump line, via XLAT or ordinary memory lookup.
+; All printable characters "play through" as themselves. The high 128
 ; characters are translated to ASCII period (2Eh). The non-printable
 ; characters in the low 128 are also translated to ASCII period, as is
 ; char 127.
-DotXlat: 
+DotXlat:
     db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
     db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
     db 20h,21h,22h,23h,24h,25h,26h,27h,28h,29h,2Ah,2Bh,2Ch,2Dh,2Eh,2Fh
@@ -58,8 +58,8 @@ DotXlat:
     db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
     db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
     db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
-			
-	
+
+
 SECTION .text      ; Section containing code
 
 ;-------------------------------------------------------------------------
@@ -77,14 +77,20 @@ ClearLine:
     push rbx
     push rcx
     push rdx
-    
+
     mov  rdx,15    ; We're going to go 16 pokes, counting from 0
-.poke:	
+.poke:
     mov rax,0      ; Tell DumpChar to poke a '0'
     call DumpChar  ; Insert the '0' into the hex dump string
+    ; WARNING: When you choose a J?? instruction make sure it tests the
+    ; same flags affected by the preceding instruction testing the condition.
+    ; DEC seems perfectly logical here, nevertheless it will
+    ; crash the program because it does not affects CF (carry flag)
+    ; while it is the very flag tested by JAE (Jump if Above or Equal)
+    ; dec rdx        ; TEST: with DEC
     sub rdx,1      ; DEC doesn't affect CF!
-    jae .poke       ; Loop back if RDX >= 0
-    
+    jae .poke      ; Loop back if RDX >= 0
+
     pop rdx        ; Restore caller's r*x GP registers
     pop rcx
     pop rbx
@@ -95,12 +101,12 @@ ClearLine:
 ; DumpChar:    "Poke" a value into the hex dump line string.
 ; UPDATED:     5/9/2022
 ; IN:          Pass the 8-bit value to be poked in RAX.
-;              Pass the value's position in the line (0-15) in RDX 
+;              Pass the value's position in the line (0-15) in RDX
 ; RETURNS:     Nothing
 ; MODIFIES:    RAX, ASCLin, DumpLin
 ; CALLS:       Nothing
 ; DESCRIPTION: The value passed in RAX will be put in both the hex dump
-;              portion and in the ASCII portion, at the position passed 
+;              portion and in the ASCII portion, at the position passed
 ;              in RDX, represented by a space where it is not a
 ;              printable character.
 
@@ -130,28 +136,28 @@ DumpChar:
 
 ; Done! Let's return:
     pop rdi     ; Restore caller's RDI
-    pop rbx	    ; Restore caller's RBX
+    pop rbx         ; Restore caller's RBX
     ret         ; Return to caller
 
 ;-------------------------------------------------------------------------
 ; PrintLine:    Displays DumpLin to stdout
-; UPDATED: 	    5/8/2023
+; UPDATED:          5/8/2023
 ; IN:           DumpLin, FULLEN
 ; RETURNS:      Nothing
 ; MODIFIES:     Nothing
 ; CALLS:        Kernel sys_write
-; DESCRIPTION:  The hex dump line string DumpLin is displayed to stdout 
+; DESCRIPTION:  The hex dump line string DumpLin is displayed to stdout
 ;          using syscall function sys_write. Registers used are preserved.
 
 PrintLine:
-        
+
     push rax          ; Alas, we don't have pushad anymore.
     push rbx
     push rcx
     push rdx
     push rsi
     push rdi
-        
+
     mov rax,1         ; Specify sys_write call
     mov rdi,1         ; Specify File Descriptor 1: Standard output
     mov rsi,DumpLine  ; Pass address of line string
@@ -174,7 +180,7 @@ PrintLine:
 ; RETURNS:     # of bytes read in R15
 ; MODIFIES:    RCX, R15, Buff
 ; CALLS:       syscall sys_read
-; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin 
+; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin
 ;              using syscall sys_read and places it in Buff. Buffer
 ;              offset counter RCX is zeroed, because we're starting in
 ;              on a new buffer full of data. Caller must test value in
@@ -212,18 +218,16 @@ main:
     mov rbp,rsp; for correct debugging
 
 ; Whatever initialization needs doing before loop scan starts is here:
-    xor r15,r15     ; Zero out r15,rsi, and rcx
-    xor rsi,rsi		
-    xor rcx,rcx
     call LoadBuff   ; Read first buffer of data from stdin
     cmp r15,0       ; If r15=0, sys_read reached EOF on stdin
     jbe Exit
 
+    xor rsi,rsi     ; Zero out rsi
 ; Go through the buffer and convert binary byte values to hex digits:
 Scan:
     xor rax,rax                ; Clear RAX to 0
     mov al,byte[Buff+rcx]      ; Get a byte from the buffer into AL
-    mov rdx,rsi	               ; Copy total counter into RDX
+    mov rdx,rsi                ; Copy total counter into RDX
     and rdx,000000000000000Fh  ; Mask out lowest 4 bits of char counter
     call DumpChar              ; Call the char poke procedure
 
@@ -248,7 +252,7 @@ Scan:
 Done:
     call PrintLine   ; Print the final "leftovers" line
 
-Exit:	
+Exit:
     mov rsp,rbp
     ret
 

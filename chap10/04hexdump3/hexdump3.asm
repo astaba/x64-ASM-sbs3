@@ -3,9 +3,9 @@
 ;  Created date    : 9/14/2022
 ;  Last update     : 7/18/2023
 ;  Author          : Jeff Duntemann
-;  Description     : A simple hex dump utility demonstrating the use of
+;  Description     : Listing 10.4
+;                  : A simple hex dump utility demonstrating the use of
 ;                  : separately assembled code libraries via EXTERN & GLOBAL
-;
 ;  Build using these commands:
 ;    nasm -f elf64 -g -F dwarf hexdump3.asm
 ;    ld -o hexdump3 hexdump3.o <path>/textlib.o

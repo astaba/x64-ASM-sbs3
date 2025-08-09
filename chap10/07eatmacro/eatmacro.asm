@@ -61,7 +61,6 @@ SECTION .text      ; Section containing code
     syscall         ; Call syscall sys_exit to return to Linux
 %endmacro
 
-
 ;-------------------------------------------------------------------------
 ; WaitEnter:    Wait for the user to press Enter at the console
 ; UPDATED:      10/11/2022
@@ -77,7 +76,6 @@ SECTION .text      ; Section containing code
     mov rdi,0      ; Specify File Descriptor 0: Stdin	
     syscall        ; Make kernel call
 %endmacro
-
 
 ;-------------------------------------------------------------------------
 ; WriteStr:     Send a string to the Linux console
@@ -102,7 +100,6 @@ SECTION .text      ; Section containing code
     pop rax
     pop r11
 %endmacro
-
 
 ;-------------------------------------------------------------------------
 ; ClrScr:       Clear the Linux console
@@ -130,7 +127,6 @@ SECTION .text      ; Section containing code
 	pop rbx
 	pop rax	
 %endmacro
-
 
 ;-------------------------------------------------------------------------
 ; GotoXY:       Position the Linux Console cursor to an X,Y position
@@ -202,7 +198,7 @@ SECTION .text      ; Section containing code
 global  _start     ; Linker needs this to find the entry point!
 
 _start:
-    push rbp       ; Stack alignment ptolog
+    push rbp       ; Stack alignment prolog
     mov rbp,rsp    ; for correct debugging
     and rsp,-16
 

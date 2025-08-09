@@ -1,5 +1,5 @@
-;  Executable name : hexdump1gcc
-;  Version         : 2.0
+;  Executable name : hexdump10gcc
+;  Version         : 1.0
 ;  Created date    : 5/9/2022
 ;  Last update     : 5/8/2023
 ;  Author          : Jeff Duntemann
@@ -15,6 +15,8 @@
 ; WARNING: Big take away from the bug: When you test filter programs like this
 ; one always filter big files with lots of characters then diff output files.
 ; Keep little strings for difficult but insightful debugging sessions.
+
+section .note.GNU-stack   ; Mark stack non-executable (security)
 
 SECTION .bss              ; Section containing uninitialized data
 

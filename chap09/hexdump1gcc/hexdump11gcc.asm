@@ -1,6 +1,6 @@
-; Source file   : x64ASM_sbs4/chap09/hexdump1gcc/hexdump2gcc.asm
+; Source file   : x64ASM_sbs4/chap09/hexdump1gcc/hexdump11gcc.asm
 ; Created       : Fri Aug  1 12:00:00 +01 2025
-; Version       : 3.0
+; Version       : 1.1
 ; Description   : A simple program in assembly for Linux, using NASM,
 ;                 demonstrating the conversion of binary values to hexadecimal
 ;                 strings. It acts as a very simple hex dump utility for files,

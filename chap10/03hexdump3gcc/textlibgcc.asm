@@ -3,8 +3,8 @@
 ;  Created date    : 5/9/2022
 ;  Last update     : 5/9/2023
 ;  Author          : Jeff Duntemann
-;  Description     : A simple include library demonstrating the use of
-;                  : the %INCLUDE directive within SASM
+;  Description     : Listing 10.2: A simple include library demonstrating
+;                  : the use of the %INCLUDE directive within SASM
 ;
 ;  Note that this file cannot be assembled by itself, as SASM does not
 ;  support separate assembly. It can only be used as the target of an
@@ -13,8 +13,8 @@
 
 SECTION .bss        ; Section containing uninitialized data
 
-    BUFFLEN  EQU 10h
-    Buff     resb BUFFLEN
+    BUFFLEN  EQU 10h       ; We read the input file 16 bytes at a time
+	Buff:    resb BUFFLEN  ; Reserve memory for the input file read buffer
 
 SECTION .data       ; Section containing initialised data
 
@@ -33,12 +33,12 @@ ASCLEN     EQU $-ASCLine
 FULLLEN    EQU $-DumpLine
 
 ; The HexDigits table is used to convert numeric values to their hex
-; equivalents. Index by nybble without a scale: [HexDigits+eax]
+; equivalents. Index by nybble without a scale: [HexDigits+rax]
 HexDigits: db "0123456789ABCDEF"
 
 ; This table is used for ASCII character translation, into the ASCII
-; portion of the hex dump line, via XLAT or ordinary memory lookup. 
-; All printable characters "play through" as themselves. The high 128 
+; portion of the hex dump line, via XLAT or ordinary memory lookup.
+; All printable characters "play through" as themselves. The high 128
 ; characters are translated to ASCII period (2Eh). The non-printable
 ; characters in the low 128 are also translated to ASCII period, as is
 ; char 127.
@@ -64,13 +64,13 @@ DotXlat:
 SECTION .text       ; Section containing code
 
 ;-------------------------------------------------------------------------
-; ClearLine:    Clear a hex dump line string to 16 0 values
-; UPDATED:      5/9/2023
-; IN:           Nothing
-; RETURNS:      Nothing
-; MODIFIES:     Nothing
-; CALLS:        DumpChar
-; DESCRIPTION:  The hex dump line string is cleared to binary 0 by
+; ClearLine:   Clear a hex dump line string to 16 0 values
+; UPDATED:     5/9/2023
+; IN:          Nothing
+; RETURNS:     Nothing
+; MODIFIES:    Nothing
+; CALLS:       DumpChar
+; DESCRIPTION: The hex dump line string is cleared to binary 0 by
 ;               calling DumpChar 16 times, passing it 0 each time.
 
 ClearLine:
@@ -110,24 +110,24 @@ DumpChar:
     push rdi    ; Save caller's RDI
 
 ; First we insert the input char into the ASCII portion of the dump line
-    mov bl,byte [DotXlat+rax]    ; Translate nonprintables to '.'
-    mov byte [ASCLine+rdx+1],bl   ; Write to ASCII portion
+    mov bl,byte [DotXlat+rax]      ; Translate nonprintables to '.'
+    mov byte [ASCLine+rdx+1],bl    ; Write to ASCII portion
 
 ; Next we insert the hex equivalent of the input char in the hex portion
 ; of the hex dump line:
-    mov rbx,rax           ; Save a second copy of the input char
-    lea rdi,[rdx*2+rdx]   ; Calc offset into line string (RDX X 3)
+    mov rbx,rax                    ; Save a second copy of the input char
+    lea rdi,[rdx*2+rdx]            ; Calc offset into line string (RDX X 3)
 
 ; Look up low nybble character and insert it into the string:
-    and rax,000000000000000Fh    ; Mask out all but the low nybble
-    mov al,byte [HexDigits+rax]  ; Look up the char equiv. of nybble
-    mov byte [DumpLine+rdi+2],al  ; Write the char equiv. to line string
+    and rax,000000000000000Fh      ; Mask out all but the low nybble
+    mov al,byte [HexDigits+rax]    ; Look up the char equivalent of nybble
+    mov byte [DumpLine+rdi+2],al   ; Write the char equivalent to line string
 
 ; Look up high nybble character and insert it into the string:
-    and rbx,00000000000000F0h    ; Mask out all the but second-lowest nybble
-    shr rbx,4                    ; Shift high 4 bits of byte into low 4 bits
-    mov bl,byte [HexDigits+rbx]  ; Look up char equiv. of nybble
-    mov byte [DumpLine+rdi+1],bl  ; Write the char equiv. to line string
+    and rbx,00000000000000F0h      ; Mask out all the but second-lowest nybble
+    shr rbx,4                      ; Shift high 4 bits of byte into low 4 bits
+    mov bl,byte [HexDigits+rbx]    ; Look up char equivalent of nybble
+    mov byte [DumpLine+rdi+1],bl   ; Write the char equiv. to line string
 
 ;Done! Let's go home:
     pop rdi    ; Restore caller's RDI
@@ -147,19 +147,19 @@ DumpChar:
 
 PrintLine:
     ; Alas, we don't have pushad anymore.
-    push rax
+    push rax         ; Push caller's registers
     push rbx
-    push rcx         ; syscall clobbers
+    push rcx         ; Used by syscall
     push rdx
     push rsi
     push rdi
-    push r11         ; syscall clobbers
+    push r11         ; Used by syscall
 
     mov rax,1        ; Specify sys_write call
     mov rdi,1        ; Specify File Descriptor 1: Standard output
     mov rsi,DumpLine ; Pass address of line string
     mov rdx,FULLLEN  ; Pass size of the line string
-    syscall          ; Make kernel call to display line string
+    syscall          ; Make system call to display line string
 
     pop r11          ; syscall clobbers
     pop rdi
@@ -170,15 +170,14 @@ PrintLine:
     pop rax
     ret              ; Return to caller
 
-
 ;-------------------------------------------------------------------------
 ; LoadBuff:    Fills a buffer with data from stdin via syscall sys_read
 ; UPDATED:     5/9/2023
 ; IN:          Nothing
 ; RETURNS:     # of bytes read in R15
-; MODIFIES:    RCX, R15, Buff
+; MODIFIES:    RAX, RDX, RSI, RDI, RCX, R15, Buff
 ; CALLS:       syscall sys_read
-; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin 
+; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin
 ;              using syscall sys_read and places it in Buff. Buffer
 ;              offset counter RCX is zeroed, because we're starting in
 ;              on a new buffer full of data. Caller must test value in
