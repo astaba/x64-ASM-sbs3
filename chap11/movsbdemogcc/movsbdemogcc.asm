@@ -1,3 +1,6 @@
+; x64ASM_sbs4/chap11/movsbdemogcc/movsbdemogcc.asm
+; Listing 11.2
+
 section .data
                  ;0000000000011
                  ;0123456789012
@@ -5,7 +8,7 @@ section .data
     BUFFLEN   equ $-EditBuff
     ENDPOS    equ 12         ; 0-based number of last visible character
     INSRTPOS  equ 1
-	
+
 section .text
 
 global main

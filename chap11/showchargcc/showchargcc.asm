@@ -1,15 +1,17 @@
-;  Executable name : showchargcc
+;  Executable name : showchargcc from Listing 11.3
 ;  Version         : 2.0
 ;  Created date    : 10/19/2022
 ;  Last update     : 7/15/2023
 ;  Author          : Jeff Duntemann
-;  Description     : A simple program in assembly for Linux, 
+;  Description     : A simple program in assembly for Linux,
 ;    demonstrating discontinuous string writes to memory using STOSB without
 ;    REP. The program loops through characters 32 through 255 and writes a
 ;    simple "ASCII chart" in a display buffer. The chart consists of 8 lines
 ;    of 32 characters, with the lines not continuous in memory.
 ;
 ;  Build using the standard SASM x64 build lines
+;  Link:      gcc source.o -o source.out
+;  Compile:   nasm -f elf64 -g -F dwarf source.asm -l source.lst
 ;
 
 SECTION .data       ; Section containing initialized data
@@ -24,18 +26,18 @@ SECTION .data       ; Section containing initialized data
     CLRLEN  equ $-ClrHome    ; Length of term clear string
     EOL     equ 10           ; Linux end-of-line character
 
-	
-; We use this to display a ruler across the screen. 
-    RulerString db "12345678901234567890123456789012345678901234567890123456789012345678901234567890" 
+
+; We use this to display a ruler across the screen.
+    RulerString db "12345678901234567890123456789012345678901234567890123456789012345678901234567890"
     RULERLEN    equ $-RulerString
-	
-SECTION .bss                ; Section containing uninitialized data	
+
+SECTION .bss                ; Section containing uninitialized data
 
     COLS	equ 81          ; Line length + 1 char for EOL
     ROWS	equ 25          ; Number of lines in display
     VidBuff	resb COLS*ROWS  ; Buffer size adapts to ROWS & COLS
 
-SECTION .text               ; Section containing code
+SECTION .text                ; Section containing code
 
 global   main                ; Linker needs this to find the entry point!
 
@@ -72,7 +74,7 @@ ClearTerminal:
 ;               The number of bytes sent to the console is calculated by
 ;               multiplying the COLS equate by the ROWS equate.
 
-Show:	
+Show:
     push r11            ; Save all registers we're going to change
     push rax
     push rcx
@@ -146,7 +148,7 @@ ClrVid:	push rax        ; Save registers that we change
 ;               procedure must be called after Ruler to display the ruler
 ;               on the console.
 
-Ruler:  
+Ruler:
     push rax         ; Save the registers we change
     push rbx
     push rcx
@@ -160,12 +162,12 @@ Ruler:
     mul ah            ; Do 8-bit multiply AL*AH to AX
     add rdi,rax       ; Add Y offset into vidbuff to RDI
     add rdi,rbx       ; Add X offset into vidbuf to RDI
-        
+
 ; RDI now contains the memory address in the buffer where the ruler
 ; is to begin. Now we display the ruler, starting at that position:
-    mov rdx,RulerString  ; Losd address of ruler string into RDX
+    mov rdx,RulerString  ; Load address of ruler string into RDX
 
-DoRule: 
+DoRule:
     mov byte al,[rdx] ; Load first digit in the ruler to AL
     stosb             ; Store 1 char; note that there's no REP prefix!
     inc rdx           ; Increment RDX to point to next char in ruler string
@@ -176,40 +178,48 @@ DoRule:
     pop rcx
     pop rbx
     pop rax
-    ret    
+    ret
 
-;-------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 ; MAIN PROGRAM:
-;-------------------------------------------------------------------------	
+;-------------------------------------------------------------------------------
 main:
     mov rbp,rsp
 
 ; Get the console and text display text buffer ready to go:
-    call ClearTerminal  ; Send terminal clear string to console
-    call ClrVid         ; Init/clear the video buffer
+    call ClearTerminal     ; Send terminal clear string to console
+    call ClrVid            ; Init/clear the video buffer
 
 ; Show a 64-character ruler above the table display:
-    mov rax,1           ; Start ruler at display position 1,1
+    mov rax,1              ; Start ruler at display position 1,1
     mov rbx,1
-    mov rcx,32          ; Make ruler 32 characters wide
-    call Ruler          ; Generate the ruler
+    mov rcx,32             ; Make ruler 32 characters wide
+    call Ruler             ; Generate the ruler
 
-; Now let's generate the chart itself:
-    mov rdi,VidBuff     ; Start with buffer address in RDI
-    add rdi,COLS*CHRTROW    ; Begin table display down CHRTROW lines
-    mov rcx,224         ; Show 256 chars minus first 32
-    mov al,32           ; Start with char 32; others won't show
-.DoLn:	mov bl,CHRTLEN  ; Each line will consist of 32 chars
-.DoChr:	stosb           ; Note that there's no REP prefix!
-    jrcxz AllDone       ; When the full set is printed, quit
-    inc al              ; Bump the character value in AL up by 1
-    dec bl              ; Decrement the line counter by one
-    loopnz .DoChr       ; Go back & do another char until BL goes to 0
+; NOTE: Now let's generate the chart itself:
+; An example of changing the RDI value every 32(CHRTLEN) calls to STOSB
+; This is done by two loops:
+; 1) The inner loop runs STOSB, check RCX (outer loop counter) to break
+;    out of both loops, and breaks when BL == 0
+; 2) The outter loop reset BL (inner loop counter) and
+;    updates RDI the destination index for STOSB
+    mov rdi,VidBuff        ; Start with buffer address in RDI
+    add rdi,COLS*CHRTROW   ; Begin table display down CHRTROW lines
+    mov rcx,224            ; Show 256 chars minus first 32
+    mov al,32              ; Start with char 32; others won't show
+.DoLn:
+    mov bl,CHRTLEN         ; Each line will consist of 32 chars
+.DoChr:
+    stosb                  ; Note that there's no REP prefix!
+    jrcxz AllDone          ; Quit loop if RCX (STOSB counter) == 0
+    inc al                 ; Bump the character value in AL up by 1
+    dec bl                 ; Decrement the line counter by one
+    loopnz .DoChr          ; While ZF unset: dec RCX and loop back to STOSB
     add rdi,COLS-CHRTLEN   ; Move RDI to start of next line
-    jmp .DoLn           ; Start display of the next line
+    jmp .DoLn              ; Start display of the next line
 
 ; Having written all that to the buffer, send the buffer to the console:
 AllDone:
-    call Show           ; Refresh the buffer to the console
+    call Show              ; Refresh the buffer to the console
 Exit:
     ret
