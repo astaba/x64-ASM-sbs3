@@ -1,4 +1,4 @@
-;  Executable name : uppercaser2gcc
+;  Executable name : uppercaser2gcc from Listing 8.3
 ;  Version         : 2.0
 ;  Created date    : 6/17/2022
 ;  Last update     : 5/8/2023

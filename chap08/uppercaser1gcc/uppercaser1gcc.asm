@@ -1,6 +1,7 @@
 ; x64ASM_sbs4/chap08/uppercaser1gcc/uppercaser1gcc.asm
 ; ------------------------------------------------------------------------------
 ; Source file   : x64ASM_sbs4/chap08/uppercaser1gcc/sandbox.asm
+; Listing 8.2
 ; Version       : 1.0
 ; Description   : demonstrating simple text file I/O (through redirection) for
 ;                 reading an input file to a buffer in blocks, forcing lowercase

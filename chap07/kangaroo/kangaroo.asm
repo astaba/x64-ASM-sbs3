@@ -1,5 +1,5 @@
 ; x64ASM_sbs3/chap07/kangaroo/kangaroo.asm
-
+; Listing 7.2
 
 section .note.GNU-stack
 

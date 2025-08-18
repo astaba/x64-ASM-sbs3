@@ -1,4 +1,4 @@
-;  Executable name : hexdump10gcc
+;  Executable name : hexdump10gcc from Listing 9.1
 ;  Version         : 1.0
 ;  Created date    : 5/9/2022
 ;  Last update     : 5/8/2023

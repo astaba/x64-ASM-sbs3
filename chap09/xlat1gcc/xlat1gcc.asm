@@ -1,4 +1,4 @@
-;  Executable name : xlat1gcc
+;  Executable name : xlat1gcc from Listing 9.2
 ;  Version         : 2.0
 ;  Created date    : 8/21/2022
 ;  Last update     : 7/17/2023

@@ -1,4 +1,4 @@
-;  Executable name : eatsyscall
+;  Executable name : eatsyscall from Listing 5.1
 ;  Version         : 1.0
 ;  Created date    : 4/25/2022
 ;  Last update     : 5/10/2023

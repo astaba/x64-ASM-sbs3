@@ -1,4 +1,4 @@
-;  Executable name : eatsyscallgcc (For linking with gcc)
+;  Executable name : eatsyscallgcc (For linking with gcc) from Listing 6.1
 ;  Version         : 1.0
 ;  Created date    : 4/25/2022
 ;  Last update     : 4/25/2023
