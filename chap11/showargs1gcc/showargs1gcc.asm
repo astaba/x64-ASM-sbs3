@@ -6,6 +6,13 @@
 ;  Description     : A simple program in assembly for Linux, using NASM 2.14.02,
 ;                    demonstrating how to access command line arguments from
 ;                    programs written/built in SASM.
+; INFO: Display command line aguments with sys_write which requires
+; string address and string length. We do that in one loops:
+;    After stashing argc and argv properly tucked in RDI and RSI by glibc
+;    In one loop we get the address to the addresses, locate the string,
+;    and compute its length using the null-terminator;
+;    replace it with a newline character,
+;    and send it to stdout using sys_write
 ;
 ;  Build using SASM standard x64 build setup
 ;  Link:      gcc source.o -o source.out

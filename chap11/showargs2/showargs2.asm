@@ -4,10 +4,18 @@
 ;  Last update  : 5/11/2023
 ;  Author       : Jeff Duntemann
 ;  Description  : A simple program in assembly for Linux, using NASM 2.15.05,
-;                 demonstrating the way to access command line arguments on
-;                 the stack. This version accesses the stack "nondestructively"
-;                 by using memory references calculated from RBP rather than
-;                 POP instructions.
+;  demonstrating the way to access command line arguments on
+;  the stack. This version accesses the stack "nondestructively"
+;  by using memory references calculated from RBP rather than
+;  POP instructions.
+; INFO: Display command line aguments with sys_write which requires
+; string address and string length. We do that in two loops:
+; 1. First loop: We sniff up the stack to get the address to the addresses,
+;    locate the string and compute its length using the null-terminator;
+;    replace it with a newline character,
+;    stash the length in an array reserved on the .bss
+; 2. Second loop: we get back to the strings adresses and use the length
+;    to display them using sys_write
 ;
 ;    Use this makefile to build:
 ;    showargs2: showargs2.o

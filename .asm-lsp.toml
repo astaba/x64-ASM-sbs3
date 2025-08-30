@@ -9,11 +9,10 @@ compiler = "nasm"
 compile_flags_txt = [
     "-f",
     "elf64",
+    "-g",
     "-F",
     "dwarf",
-    "-g",
-    "-l",
-    "asmlisting.lst",
 ]
+
 diagnostics = true
 default_diagnostics = true

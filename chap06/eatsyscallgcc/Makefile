@@ -1,4 +1,12 @@
 # x64ASM_sbs3/chap06/eatsyscallgcc/Makefile
+# INFO:
+# -fno-pie: compiling flag passed donw from gcc to affect gas compiling
+#           by preventing compilation PIE friendly relocatable object file.
+#           In the present setup it is irrelevant since NASM is compiling.
+# -no-pie : linking flag passed down from gcc to prevent ld from linking a
+#			PIE executable. Most importantly it trumps the status of PIC
+#			(-fno-pie) whether set or not at the compiling stage.
+#
 
 .PHONY: all clean
 .DELETE_ON_ERROR:
