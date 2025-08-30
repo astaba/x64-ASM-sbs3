@@ -1,5 +1,4 @@
-
-;  Executable name : charsin
+;  Executable name : charsin from Listing 12.4
 ;  Version         : 3.0
 ;  Created date    : 11/19/2022
 ;  Last update     : 11/20/2022
@@ -10,30 +9,32 @@
 ;  Build using these commands:
 ;    nasm -f elf64 -g -F dwarf charsin.asm
 ;    gcc charsin.o -o charsin -no-pie
-;	
+;
+; TODO: Research: floating-point in Assembly
+;
 
 [SECTION .data]         ; Section containing initialised data
-	
-SPrompt  db 'Enter string data, followed by Enter: ',0		
+
+SPrompt  db 'Enter string data, followed by Enter: ',0
 IPrompt  db 'Enter an integer value, followed by Enter: ',0
 IFormat  db '%d',0
 SShow    db 'The string you entered was: %s',10,0
 IShow    db 'The integer value you entered was: %5d',10,0
-	
+
 [SECTION .bss]          ; Section containing uninitialized data
 
 IntVal   resq 1         ; Reserve an uninitialized double word
 InString resb 128       ; Reserve 128 bytes for string entry buffer
-		
+
 [SECTION .text]         ; Section containing code
 
 extern stdin            ; Standard file variable for input
 extern fgets
-extern printf	
-extern scanf		
+extern printf
+extern scanf
 
 global main             ; Required so linker can find entry point
-	
+
 main:
     push rbp            ; Set up stack frame
     mov rbp,rsp
@@ -41,7 +42,7 @@ main:
 ;;; Everything before this is boilerplate; use it for all ordinary apps!
 
 ; First, an example of safely limited string input using fgets:
-    mov rdi,SPrompt	    ; Load address of the prompt string into RDI
+    mov rdi,SPrompt         ; Load address of the prompt string into RDI
     call printf         ; Display it
 
     mov rdi,InString    ; Copy address of buffer for entered chars
@@ -69,6 +70,7 @@ main:
 
     mov rsp,rbp         ; Destroy stack frame before returning
     pop rbp
-	
+
     ret                 ; Return control to Linux
 
+SECTION .note.GNU-stack

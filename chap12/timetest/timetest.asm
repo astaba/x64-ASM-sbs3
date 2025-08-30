@@ -1,4 +1,4 @@
-;  Executable name : timetest
+;  Executable name : timetest from Listing 12.5
 ;  Version         : 3.0
 ;  Created date    : 11/28/2022
 ;  Last update     : 11/28/2022
@@ -14,17 +14,17 @@
 [SECTION .data]         ; Section containing initialised data
 
 TimeMsg  db "Hey, what time is it?  It's %s",10,0
-YrMsg	 db "The year is %d.",10,10,0
+YrMsg    db "The year is %d.",10,10,0
 PressEnt db "Press enter after a few seconds: ",0
-Elapsed  db "A total of %d seconds has elapsed since program began running.",10,0	
-	
+Elapsed  db "A total of %d seconds has elapsed since program began running.",10,0
+
 [SECTION .bss]          ; Section containing uninitialized data
 
-OldTime	 resq 1         ; Reserve 3 quadwords for time_t values
+OldTime  resq 1         ; Reserve 3 quadwords for time_t values
 NewTime  resq 1
-TimeDiff resq 1	
+TimeDiff resq 1
 TimeStr  resb 40        ; Reserve 40 bytes for time string
-TmCopy	 resd 9         ; Reserve 9 integer fields for time struct tm			
+TmCopy   resd 9         ; Reserve 9 integer fields for time struct tm
 
 [SECTION .text]         ; Section containing code
 
@@ -32,19 +32,19 @@ extern ctime
 extern difftime
 extern getchar
 extern printf
-extern localtime	
-extern strftime	
+extern localtime
+extern strftime
 extern time
-									
+
 global main             ; Required so linker can find entry point
-	
+
 main:
     push rbp            ; Set up stack frame
     mov rbp,rsp
-    
-;;; Everything before this is boilerplate; use it for all ordinary apps!	
 
-; Generate a time_t calendar time value with clib's time function
+;;; Everything before this is boilerplate; use it for all ordinary apps!
+
+; Generate a time_t calendar time value with libc's time function
     xor rdi,rdi         ; Clear rdi to 0
     call time           ; Returns calendar time in rax
     mov [OldTime],rax   ; Save time value in memory variable
@@ -69,11 +69,11 @@ main:
     rep movsd           ; Copy static tm struct to local copy
 
 ; Display one of the fields in the tm structure
-	mov rdx,[TmCopy+20] ; Year field is 20 bytes offset into tm
-	add rdx,1900        ; Year field is # of years since 1900
-	mov rdi,YrMsg       ; Put address of the base string into rdi
+    mov rdx,[TmCopy+20] ; Year field is 20 bytes offset into tm
+    add rdx,1900        ; Year field is # of years since 1900
+    mov rdi,YrMsg       ; Put address of the base string into rdi
     mov rsi,rdx
-	call printf         ; Display string and year value with printf
+    call printf         ; Display string and year value with printf
 
 ; Display the 'Press Enter: ' prompt
     mov rdi,PressEnt    ; Put the address of the base string into rdi
@@ -93,10 +93,13 @@ main:
     mov rsi,[TimeDiff]  ; Put difference in seconds rdi
     mov rdi,Elapsed     ; Push addr. of elapsed time message string
     call printf         ; Display elapsed time
-		
+
 ;;; Everything after this is boilerplate; use it for all ordinary apps!
 
     mov rsp,rbp         ; Destroy stack frame before returning
     pop rbp
 
     ret                 ; Return to glibc shutdown code
+
+
+[SECTION .note.GNU-stack]

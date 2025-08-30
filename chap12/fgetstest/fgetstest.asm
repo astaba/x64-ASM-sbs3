@@ -1,4 +1,4 @@
-;  Executable name : fgetstest
+;  Executable name : fgetstest from Listing 12.3
 ;  Version         : 3.0
 ;  Created date    : 11/19/2022
 ;  Last update     : 7/18/2022
@@ -54,3 +54,4 @@ main:
 
     ret                  ; Return to glibc shutdown code
 
+SECTION .note.GNU-stack

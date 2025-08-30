@@ -12,18 +12,36 @@ Here's a breakdown of which flags go to which actor, with a special focus on the
 
 ### C Compiler (GCC)
 
-  * **`CFLAGS = -m64 -fno-pie -no-pie -Wall`**: These flags are sent to `gcc` when it compiles C source code. In your `Makefile`, `gcc` is only used to link the object file, so these flags aren't directly applied to a compile step. However, if you had C code, they would be used.
-      * `-m64`: Generates code for a 64-bit target.
-      * `-fno-pie`, `-no-pie`: Disable Position Independent Executable, which is important for certain types of assembly code.
-      * `-Wall`: Turns on all standard compiler warnings.
+* **`CFLAGS = -m64 -fno-pie -no-pie -Wall`**: These flags are sent to `gcc` when it compiles C source code. In your `Makefile`, `gcc` is only used to link the object file, so these flags aren't directly applied to a compile step. However, if you had C code, they would be used.
+  * `-m64`: Generates code for a 64-bit target.
+  * `-fno-pie`, `-no-pie`: Disable Position Independent Executable, which is important for certain types of assembly code.
+  * `-Wall`: Turns on all standard compiler warnings.
+
+Both `-fno-pie` and `-no-pie` are GCC compiler flags used to control the generation of Position-Independent Executables (PIE), but they work at different stages of the compilation process.
+
+* **`-fno-pie`**: This is a **compiler** flag. It tells the compiler to produce object files (`.o`) that are **not** position-independent. This affects how the code and data within the object file are generated, assuming a fixed memory address.
+* **`-no-pie`**: This is a **linker** flag. It tells the linker to produce a final executable that is **not** a PIE. This is the more common and direct way to create a non-PIE executable, as it overrides any position-independent settings that might have been passed to the compiler.
+
+In modern GCC versions, a common flag like `-pie` is actually an alias for `-fpie` (compiler) and `-pie` (linker). Similarly, `-no-pie` is an alias for `-fno-pie` and `-no-pie`, making the distinction less critical for general use, but it's important to understand for fine-grained control over the build process.
+
+Together (`-fno-pie` `-no-pie`, but mostly `-no-pie`): ensures both compilation and linking are **non-PIE**, giving you a classic flat executable with fixed addresses — what you usually want in low-level experiments (like your assembly + GDB work).
+
+Rule of thumb for your assembly + debugging work only if you entrust both compiling and linking to GCC:
+
+```bash
+# Always use both:
+gcc -no-pie -fno-pie -o prog prog.o
+```
+
+So you’re guaranteed predictable addresses (`_start`, `main`, etc.) and breakpoints like `b _start+0x33` will work correctly.
 
 -----
 
 ### Assembler (NASM)
 
-  * **`ASFLAGS = -f elf64 -F dwarf`**: These are flags for `nasm`.
-      * `-f elf64`: Specifies the output format as 64-bit ELF, which is the standard format for Linux executables.
-      * `-F dwarf`: Specifies the debug information format. DWARF is a standard format for debuggers. This flag is directly related to the `-g` flag's purpose.
+* **`ASFLAGS = -f elf64 -F dwarf`**: These are flags for `nasm`.
+  * `-f elf64`: Specifies the output format as 64-bit ELF, which is the standard format for Linux executables.
+  * `-F dwarf`: Specifies the debug information format. DWARF is a standard format for debuggers. This flag is directly related to the `-g` flag's purpose.
 
 -----
 
@@ -110,37 +128,46 @@ r64 = RAX RBX RCX RDX RBP RSP RSI RDI R8 R9 R10 R11 R12 R13 R14 R15
 
 | Instruction | Purpose | Effect / Operands | Notes / Example |
 | ----------- | ------- | ----------------- | --------------- |
-| `MOV` | Copy data | `MOV dest, src` | `MOV RAX, RBX` copies RBX into RAX |
 | `ADD` | Add values | `ADD dest, src` | `ADD RAX, 5` → RAX += 5 |
-| `SUB` | Subtract src from dest | `SUB dest, src` | `SUB RAX, 5` → RAX -= 5 |
-| `XCHG` | Swap values | `XCHG reg1, reg2` | `XCHG RAX, RBX` |
-| `INC` | Increment | `INC reg/mem` | Increases value by 1 |
-| `DEC` | Decrement | `DEC reg/mem` | Decreases value by 1 |
-| `NEG` | Negate (two's complement) | `NEG reg/mem` | `NEG RAX` → RAX = -RAX |
-| `MOVSX` | Sign-extend | `MOVSX dest, src` | Extends sign bit (e.g. byte → dword) |
-| `MUL` | Unsigned multiply | `MUL src` | Implicitly uses RAX; result in RDX\:RAX |
-| `DIV` | Unsigned divide | `DIV src` | Divides RDX\:RAX by `src`, result in RAX, remainder in RDX |
-| `PUSH` | Push to stack | `PUSH reg/mem/imm` | Decrements RSP, writes value |
-| `PUSHQW` | Push quadword (64-bit) manually | (Non-standard; maybe macro alias) | `PUSH rax` is same |
-| `POP` | Pop from stack | `POP reg/mem` | Reads value from \[RSP], increments RSP |
-| `POPQW` | Pop quadword manually | (Non-standard; maybe macro alias) | `POP rax` is standard |
 | `AND` | Bitwise AND | `AND dest, src` | Clears bits |
-| `OR` | Bitwise OR | `OR dest, src` | Sets bits |
-| `XOR` | Bitwise XOR | `XOR dest, src` | Toggles bits; `XOR RAX, RAX` → zeroing idiom |
+| `BT` | Check specific bit | `BT op1, op2` | Copies to CF bit specified by op2 |
+| `CALL` | | | |
+| `CLC` | Clear carry flag | No operand | CF = 0 |
+| `CLD` | | | |
+| `CMP` | Compare (like subtract) | `CMP op1, op2` | Sets flags based on (op1 - op2) |
+| `DEC` | Decrement | `DEC reg/mem` | Decreases value by 1 |
+| `DIV` | Unsigned divide | `DIV src` | Divides RDX\:RAX by `src`, result in RAX, remainder in RDX |
+| `INC` | Increment | `INC reg/mem` | Increases value by 1 |
+| `LEA` | Load Effective address | `LAE reg, m` | Load effective address calculation, also useful for Math |
+| `LOOP` | | | |
+| `LOOPNZ` | | | |
+| `MOVS/B/W/D/Q` | | | |
+| `MOVSX` | Sign-extend | `MOVSX dest, src` | Extends sign bit (e.g. byte → dword) |
+| `MOV` | Copy data | `MOV dest, src` | `MOV RAX, RBX` copies RBX into RAX |
+| `MUL` | Unsigned multiply | `MUL src` | Implicitly uses RAX; result in RDX\:RAX |
+| `NEG` | Negate (two's complement) | `NEG reg/mem` | `NEG RAX` → RAX = -RAX |
 | `NOT` | Bitwise NOT | `NOT reg/mem` | Inverts all bits |
-| `SHL` | Shift left | `SHL dest, count` | Multiply by 2ⁿ |
-| `SHR` | Shift right (logical) | `SHR dest, count` | Logical divide by 2ⁿ |
-| `ROL` | Rotate bits left | `ROL dest, count` | Bitwise rotation (carry not affected) |
-| `ROR` | Rotate bits right | `ROR dest, count` | Bits wrap around |
+| `OR` | Bitwise OR | `OR dest, src` | Sets bits |
+| `POPQW` | Pop quadword manually | (Non-standard; maybe macro alias) | `POP rax` is standard |
+| `POP` | Pop from stack | `POP reg/mem` | Reads value from \[RSP], increments RSP |
+| `PUSHQW` | Push quadword (64-bit) manually | (Non-standard; maybe macro alias) | `PUSH rax` is same |
+| `PUSH` | Push to stack | `PUSH reg/mem/imm` | Decrements RSP, writes value |
 | `RCL` | Rotate through carry left | `RCL dest, count` | Carry flag used as extra bit |
 | `RCR` | Rotate through carry right | `RCR dest, count` | Carry flag used as extra bit |
-| `CLC` | Clear carry flag | No operand | CF = 0 |
+| `REP` | | | |
+| `RET` | | | |
+| `ROL` | Rotate bits left | `ROL dest, count` | Bitwise rotation (carry not affected) |
+| `ROR` | Rotate bits right | `ROR dest, count` | Bits wrap around |
+| `SHL` | Shift left | `SHL dest, count` | Multiply by 2ⁿ |
+| `SHR` | Shift right (logical) | `SHR dest, count` | Logical divide by 2ⁿ |
 | `STC` | Set carry flag | No operand | CF = 1 |
-| `CMP` | Compare (like subtract) | `CMP op1, op2` | Sets flags based on (op1 - op2) |
+| `STD` | | | |
+| `STOS/B/W/D/Q` | | | |
+| `SUB` | Subtract src from dest | `SUB dest, src` | `SUB RAX, 5` → RAX -= 5 |
 | `TEST` | Bitwise AND for flags | `TEST op1, op2` | Sets ZF, SF; no result stored |
-| `BT` | Check specific bit | `BT op1, op2` | Copies to CF bit specified by op2 |
-| `LEA` | Load Effective address | `LAE reg, m` | Load effective address calculation, also useful for Math |
+| `XCHG` | Swap values | `XCHG reg1, reg2` | `XCHG RAX, RBX` |
 | `XLAT` | Perform table translation from AL to AL | `XLAT ` | RBX implicit operand holds Table address, while AL implicit operand holds target character |
+| `XOR` | Bitwise XOR | `XOR dest, src` | Toggles bits; `XOR RAX, RAX` → zeroing idiom |
 
 ---
 
@@ -167,7 +194,9 @@ r64 = RAX RBX RCX RDX RBP RSP RSI RDI R8 R9 R10 R11 R12 R13 R14 R15
 | `JNS`         | SF = 0                    | Jump if not sign                    |
 | `JP` / `JPE`  | PF = 1                    | Jump if parity even                 |
 | `JNP`/`JPO`   | PF = 0                    | Jump if parity odd                  |
+| `JRCXZ`       | RCX = 0                   | Jump if RCX is null                 |
 | `LOOP`        | RCX-- and jump if RCX ≠ 0 | Controlled looping                  |
+| `LOOPNZ`      | RCX-- and jump if ZF = 0 and RCX ≠ 0 | Controlled looping       |
 
 > 🔔 Note: All conditional jumps rely on **flags** set by instructions like `CMP`, `TEST`, `SUB`, `ADD`, etc.
 
@@ -241,8 +270,6 @@ The code works and is correct, but it is not optimized for performance. A more e
 
 * **Only save callee-saved registers** (`RBX`, `RBP`, etc.) that are used in a function.
 * Let the **calling function** be responsible for saving any caller-saved registers it needs to preserve across a function call.
-
-Your critical eye has identified a key point of discussion for any assembly programmer: striking a balance between code correctness, readability, and performance
 
 ## Embedding data in the .code segment
 
@@ -385,3 +412,97 @@ BuffLength: dq BUFFLEN
   * **`DumpLength: dq DUMPLEN`**: This line creates a variable in the `.data` section called `DumpLength`. It reserves a 64-bit quadword (`dq`) of memory and initializes it with the **constant value** defined by the `DUMPLEN` equate.
 
 The assembler first calculates the value of `DUMPLEN` (a number), then places that number into the memory reserved for the `DumpLength` variable. Now, `DumpLength` is a real, tangible piece of data in your program's memory that can be exported globally and accessed by other parts of your code. You can load its value into a register, modify it, or perform other operations that are not possible with a simple equate.
+
+## OS and .bss liniency
+
+From [showargs2.asm](./chap11/showargs2/showargs2.asm).
+
+> **The issue**:  
+> `mov [ArgLens+rbx*8],rdi    ; Put length of arg into table`  
+> I did not understand where this instruction would put the legnth for the tenth arguments since RBX is 1-based and only 10 resq were set to define ArgLens and I thougth when RBX==10 and the 0-index array AgrLens is guided by an index of 10 some out of bound phenomenon would occur and crash the code. So I took all that program to gbd and carefully monitored the stack and .bss segment.  
+> What I saw blowed my mind. The 10 qword are actually reserved for AgrLens but string length are stored from the second qword while the first remains empty. The mind boggling part is when RBX==10, the tenth arguments string length is stored at the eleventh qword without fault and in total disregard of the fact that only 10 qwords were reserved. So I ran in gdb:  
+> `(gdb) x/16xg &ArgLens`  
+> And I see a bunch of zero out qword as if waiting to be populated.  
+> Ok, then the res/b/w/d/q instruction seems not compelling so what is the point of reserving when the .bss segment seems to be a "Far West free for all" ???  
+
+This is a fascinating observation that gets to a fundamental aspect of how the C runtime and the Linux linker work. Your discovery is a perfect example of a behavior that seems to defy the rules but is actually a side effect of how memory is managed.
+
+### The "Far West" is an Illusion
+
+The behavior you're seeing isn't because `.bss` is a "free for all." It's because the Linux kernel and the linker are more lenient than you might expect. When you declare `ArgLens resq 10`, you're asking for 80 bytes of uninitialized memory. The linker places this variable at a specific location in the `.bss` section. However, the operating system doesn't just allocate the 80 bytes you asked for. It typically allocates memory in larger chunks called **pages**. On x86-64 Linux, a memory page is usually **4096 bytes** long.
+
+When the OS gives your program a memory page for its `.bss` segment, your `ArgLens` variable, which is only 80 bytes, sits at the beginning of that page. Your program then has the full 4096-byte page to work with. Since `ArgLens` is so small, there is a lot of extra space after it within the same page. When your code writes to the 11th quadword (`ArgLens + 10*8`), it's writing to an address that is only 80 bytes away from the start of `ArgLens`—well within the bounds of the larger 4096-byte page.
+
+
+
+Because you're not writing to a different memory page or an area with a different security permission (like a read-only code segment), the operation doesn't cause a segmentation fault.
+
+### The Purpose of `resq`
+
+The `resq` instruction is not "compelling" in the sense of a strict boundary check that will halt your program. It's a directive for the assembler and linker. Its purpose is to:
+
+1.  **Reserve Space:** It tells the assembler how much memory to reserve in the `.bss` segment for your variable.
+2.  **Symbol Placement:** It creates a symbol (`ArgLens`) that points to the beginning of this reserved block.
+3.  **Linker Allocation:** It signals to the linker to place this reserved block in a read/write segment and to size that segment appropriately.
+
+The "out of bounds" crash you expected would only happen if you wrote to an address that falls outside of the memory pages allocated to your program. In this case, you are just writing into the leftover space of the same page that `ArgLens` occupies. **The operating system doesn't know (or care) that your assembly code thinks `ArgLens` is only 80 bytes; it just sees a valid memory write to a valid address.**
+
+Your finding is a perfect demonstration that the "rules" of assembly are often governed by the underlying behavior of the operating system and memory management units. The program works by pure chance—a happy accident of a small allocation request landing in a much larger allocated memory page. In a larger or more complex program, writing past a variable's reserved space would likely cause a crash, as you might overwrite other data or stray into an unallocated page.
+
+## glibc
+
+```asm
+;------------------------------------------------------------------------------
+;  This routine provides 6 entry points, and returns 6 different "sizes" of
+;  pseudorandom numbers based on the value returned by rand. Note first of
+;  all that rand pulls a 31-bit value. The high 16 bits are the most "random"  ← Explanation 1
+;  so to return numbers in a smaller range, you fetch a 31-bit value and then
+;  right-shift it to zero-fill all but the number of bits you want. An 8-bit
+;  random value will range from 0-255, a 7-bit value from 0-127, and so on.
+;  Respects RBP, RSI, RDI, RBX, and RSP. Returns random value in RAX.          ← Explanation 2
+
+pull31: mov rcx,0       ; For 31 bit random, we don't shift
+        jmp pull
+pull20: mov rcx,11      ; For 20 bit random, shift by 11 bits
+        jmp pull
+pull16: mov rcx,15      ; For 16 bit random, shift by 15 bits
+        jmp pull
+pull8:  mov rcx,23      ; For 8 bit random, shift by 23 bits
+        jmp pull
+pull7:  mov rcx,24      ; For 7 bit random, shift by 24 bits
+        jmp pull
+pull6:  mov rcx,25      ; For 6 bit random, shift by 25 bits
+        jmp pull
+pull4:  mov rcx,27      ; For 4 bit random, shift by 27 bits
+
+pull:
+    push rcx            ; rand trashes rcx; save shift value on stack          ← Explanation 3
+    call rand           ; Call rand for random value; returned in RAX
+    pop rcx             ; Pop stashed shift value back into RCX
+    shr rax,cl          ; Shift the random value in RAX by the chosen factor
+                        ;  keeping in mind that part we want is in CL
+    ret                 ; Go home with random number in RAX
+```
+1. The statement about the high 16 bits being the most "random" refers to a common characteristic of older pseudo-random number generators (PRNGs), particularly those based on a Linear Congruential Generator (LCG) algorithm. These algorithms often produce a pattern where the **low-order bits** are highly predictable and cycle through a short, repeating pattern. The **high-order bits**, on the other hand, change more unpredictably and have a much longer cycle, making them statistically more "random." So, if you need a truly random value, you'd want to use the high bits.
+2. "Respects registers" means that the procedure follows the standard calling convention (the x64 System V ABI) for managing registers. This ensures that the function can be safely used without causing unintended side effects in the calling code. 
+    * **Preserved Registers:** These registers are expected to hold their values across a function call. If a function needs to use one of them, it must save the original value to the stack first and restore it before returning. `RBP`, `RSI`, `RDI`, `RBX`, and `RSP` are all in this category. The `push` and `pop` instructions in the `pull` procedure are a prime example of this.
+    * **Volatile Registers:** These registers can be freely modified by a function. The calling code should not assume their values will be preserved. `RAX` is a volatile register, often used for return values.
+3. The `RCX` register is protected from `rand()` because `rand()` is a C standard library function, and it follows the x64 System V ABI. In this ABI, **`RCX` is a volatile register**. `rand()` is free to use and modify it for its own purposes without saving its original value. The `pull` procedure saves the shift count (which was originally placed in `RCX` by the `pullXX` entry points) by pushing it onto the stack before calling `rand`. After `rand()` returns, the procedure pops the saved value back into `RCX`, ensuring the correct shift count is available for the `shr` instruction.
+
+## `MMX` vs `SSE` (or `XMM`) registers
+
+### MMX Registers
+
+**MMX (Multimedia Extension)** registers were introduced by Intel in 1997. They are a set of eight 64-bit registers (`MM0` to `MM7`). Their purpose was to accelerate multimedia applications, like graphics and audio processing, by allowing a single instruction to operate on multiple pieces of data at once. This is known as **SIMD (Single Instruction, Multiple Data)**. The main limitation of MMX registers is that they are an alias for the old x87 FPU (Floating-Point Unit) registers. This meant you couldn't use MMX and x87 floating-point instructions at the same time without a performance penalty, as you had to switch between modes.
+
+***
+
+### SSE Registers
+
+**SSE (Streaming SIMD Extensions)** registers were introduced in 1999 as the successor to MMX. SSE provides a completely new set of eight 128-bit registers (`XMM0` to `XMM7`) and a dedicated set of instructions. SSE registers are separate from the x87 FPU, which eliminated the performance penalty of switching between modes. This makes them ideal for floating-point calculations, as they can operate on multiple floating-point numbers simultaneously. Later versions of SSE (SSE2, SSE3, etc.) added more instructions and expanded the register count to 16 (`XMM0` to `XMM15`) on 64-bit systems.
+
+***
+
+### XMM Registers
+
+**XMM** is simply the name for the set of registers introduced with SSE. So, when people refer to **XMM registers**, they are talking about the **SSE registers**.
